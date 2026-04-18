@@ -155,7 +155,7 @@ export const Clients = () => {
               }
             }}
           >
-            Add Client
+            Ajouter un Client
           </Button>
         </Box>
       </motion.div>
@@ -341,7 +341,7 @@ export const Clients = () => {
         }}
       >
         <DialogTitle sx={{ fontWeight: 700, fontSize: '1.5rem', color: '#fff' }}>
-          {editingClient ? 'Edit Client' : 'Add New Client'}
+          {editingClient ? 'Modifier le Client' : 'Ajouter un Nouveau Client'}
         </DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2 }}>
@@ -363,7 +363,7 @@ export const Clients = () => {
               onChange={(e) => setFormData({ ...formData, tel: e.target.value })}
             />
             <AnimatedInput
-              label="Address"
+              label="Adresse"
               value={formData.adresse}
               onChange={(e) => setFormData({ ...formData, adresse: e.target.value })}
               multiline
@@ -383,7 +383,7 @@ export const Clients = () => {
               }
             }}
           >
-            Cancel
+            Annuler
           </Button>
           <Button 
             onClick={handleSubmit} 
@@ -399,7 +399,7 @@ export const Clients = () => {
               }
             }}
           >
-            {editingClient ? 'Save Changes' : 'Add Client'}
+            {editingClient ? 'Enregistrer' : 'Ajouter le Client'}
           </Button>
         </DialogActions>
       </Dialog>

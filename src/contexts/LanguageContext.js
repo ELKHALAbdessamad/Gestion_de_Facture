@@ -13,13 +13,12 @@ export const useLanguage = () => {
 
 export const LanguageProvider = ({ children }) => {
   const [language, setLanguage] = useState(() => {
-    // Récupérer la langue depuis localStorage ou utiliser le navigateur
+    // Récupérer la langue depuis localStorage ou utiliser le français par défaut
     const savedLang = localStorage.getItem('language');
     if (savedLang) return savedLang;
     
-    // Détecter la langue du navigateur
-    const browserLang = navigator.language.split('-')[0];
-    return browserLang === 'fr' ? 'fr' : 'en';
+    // Français par défaut
+    return 'fr';
   });
 
   useEffect(() => {
