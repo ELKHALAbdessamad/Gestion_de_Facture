@@ -1,0 +1,128 @@
+% ============================================================================
+% CHAPITRE 3 — Cadrage du Projet
+% ============================================================================
+
+\chapter{Cadrage du Projet}
+
+Après l'analyse externe (Chapitre 2), ce chapitre pose le \textbf{cadre formel du projet}. Le tableau de cadrage constitue le « contrat de projet » — précis, daté, réaliste.
+
+\section{Tableau de cadrage complet (Charte Projet)}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Tableau de cadrage — Charte Projet}
+\label{tab:cadrage}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Rubrique}} & \textcolor{white}{\textbf{Contenu}} \\
+\hline
+Titre & Application Web de Gestion des Factures \\
+Date début & Octobre 2025 \\
+Date fin prévue & Janvier 2026 \\
+Durée & 4 mois (16 semaines) \\
+Contexte & PME/freelances marocains souffrant d'une gestion manuelle inefficace (Ch.1) \\
+Objectif général & Développer une application web complète de gestion des factures, viable techniquement et économiquement \\
+\hline
+\rowcolor{lightblue}\multicolumn{2}{|l|}{\textbf{Objectifs SMART}} \\
+\hline
+Spécifique & CRUD factures/clients/articles, PDF, dashboard KPIs, rôles USER/ADMIN \\
+Mesurable & 100\% fonctionnalités CDC ; 0 erreur calcul ; PDF $<$ 1s \\
+Atteignable & Stack maîtrisée (React, Firebase) ; 4 mois ; 2 développeurs \\
+Réaliste & Validation terrain : 83\% d'intention d'utilisation \\
+Temporel & Livraison : jan 2026 ; soutenance : fév 2026 \\
+\hline
+\rowcolor{lightblue}\multicolumn{2}{|l|}{\textbf{Périmètre}} \\
+\hline
+Inclus & CRUD Factures/Clients/Articles/Catégories ; Calculs auto ; PDF + QR + Signature ; Dashboard ; USER/ADMIN ; Export Excel ; Email démo ; Multi-devise/société (interface) \\
+Exclus & App mobile native ; Email automatique serveur ; JWT production ; Archivage cloud ; Multi-devise complet (V2) \\
+\hline
+\rowcolor{lightblue}\multicolumn{2}{|l|}{\textbf{Parties prenantes}} \\
+\hline
+Équipe & Abdessamad ELKHAL, Yahya FALHAOUI \\
+Encadrants & Pr. Souissi Abdelmoughi, Pr. Hind Ouzif, Pr. Asmahane Tahiri \\
+Utilisateurs & Comptables, freelances, dirigeants PME \\
+Jury & Commission PFA EMSI \\
+\hline
+\rowcolor{lightblue}\multicolumn{2}{|l|}{\textbf{Contraintes}} \\
+\hline
+Délai & 4 mois non négociables \\
+Budget & 0 MAD (outils open source, Firebase plan gratuit) \\
+Tech & Hébergement local ports 3000/3001 ; auth localStorage (démo) \\
+\hline
+Livrables & Code source documenté ; rapport PFA ; démo fonctionnelle ; diagrammes UML \\
+Critères réussite & Toutes fonctionnalités OK ; rapport $\geq$ 80 pages ; note $\geq$ 14/20 \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{Choix et justification du cycle de vie}
+
+\subsection{Comparaison des modèles}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Comparaison des modèles de cycle de vie}
+\label{tab:cycle_vie}
+\begin{tabularx}{\textwidth}{|l|X|X|l|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Modèle}} & \textcolor{white}{\textbf{Avantages}} & \textcolor{white}{\textbf{Inconvénients}} & \textcolor{white}{\textbf{Adapté}} \\
+\hline
+Cascade & Simple, documenté & Rigide, pas de retour arrière & ✗ \\
+Modèle V & Tests associés & Peu flexible & ✗ \\
+\textbf{Agile/Scrum} & \textbf{Itératif, adaptatif, livraisons fréquentes} & Disponibilité équipe requise & \textbf{✓} \\
+Hybride & Mixte & Complexe à piloter & ✗ \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Justification du choix Scrum}
+
+\begin{enumerate}
+    \item \textbf{Durée courte} (4 mois) : sprints de 2 semaines, livrables fréquents vérifiables.
+    \item \textbf{Besoins évolutifs} : animations 3D et signature numérique ont émergé en cours de projet.
+    \item \textbf{Binôme flexible} : user stories et backlog adaptés à 2 développeurs.
+    \item \textbf{Validation continue} : chaque sprint livre un incrément démontrable.
+\end{enumerate}
+
+\section{Étude critique de l'existant}
+
+\subsection{Solutions et limitations}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Étude critique de l'existant}
+\label{tab:existant}
+\begin{tabularx}{\textwidth}{|l|X|X|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Solution}} & \textcolor{white}{\textbf{Description}} & \textcolor{white}{\textbf{Limitations}} \\
+\hline
+Excel/Word & Modèles manuels & Pas d'automatisation, erreurs, pas de PDF auto \\
+QuickBooks & ERP USA & Anglais, 30-80\$/mois, trop complexe \\
+Zoho Invoice & Cloud basique & Design daté, pas de rôles \\
+Indy & Micro-compta freelance & Mono-utilisateur, pas de dashboard \\
+Sage Maroc & ERP comptabilité & Prix élevé, installation locale \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Critique}
+
+Deux catégories de limites : outils \textbf{trop simples} (Excel) sans automatisation, et outils \textbf{trop complexes/coûteux} (QuickBooks, Sage) inadaptés aux PME. Aucun ne combine : accessibilité, design moderne, TVA différenciée, rôles USER/ADMIN, export Excel et archivage.
+
+\section{Justification et différenciation}
+
+\subsection{Avantages différenciateurs}
+
+\begin{enumerate}
+    \item \textbf{Design premium} : glassmorphism, animations 3D Framer Motion, QR code, signature
+    \item \textbf{Spécialisation métier} : TVA par catégorie, remises ligne + globale, validation admin
+    \item \textbf{Architecture dual-database} : Firebase (temps réel) + JSON Server (paramétrage)
+    \item \textbf{Prix accessible} : 0 MAD démo, plans compétitifs vs concurrents
+\end{enumerate}
+
+\subsection{Positionnement}
+
+La solution se positionne comme une \textbf{application web cloud-native, mobile-first}, développée selon les meilleures pratiques React (hooks, contextes, services séparés), offrant une expérience comparable aux meilleures SaaS du marché à coût minimal.

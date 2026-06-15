@@ -1,0 +1,195 @@
+% ============================================================================
+% CHAPITRE 4 — Spécification des Besoins
+% ============================================================================
+
+\chapter{Spécification des Besoins}
+
+Ce chapitre est le « contrat fonctionnel » entre les parties prenantes et l'équipe technique. Il détaille ce qui doit être fait dans le périmètre défini au Chapitre 3.
+
+\section{Parties prenantes et utilisateurs}
+
+\subsection{Parties prenantes}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Parties prenantes internes et externes}
+\label{tab:parties_prenantes}
+\begin{tabularx}{\textwidth}{|l|l|X|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Partie prenante}} & \textcolor{white}{\textbf{Type}} & \textcolor{white}{\textbf{Rôle / Intérêt}} \\
+\hline
+Équipe de développement & Interne & Conception, développement, tests, documentation \\
+Encadrants EMSI & Interne & Orientation méthodologique, validation des livrables \\
+Jury PFA & Interne & Évaluation académique finale \\
+Utilisateurs USER & Externe & Comptables/agents créant et gérant les factures \\
+Utilisateurs ADMIN & Externe & Administrateurs validant, configurant, supervisant \\
+Clients finaux des PME & Externe (indirect) & Destinataires des factures générées \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Profils utilisateurs}
+
+\begin{description}
+    \item[\textbf{USER :}] Création/modification factures, gestion clients, PDF, suivi paiements. Pas d'accès paramètres système.
+    \item[\textbf{ADMIN :}] Hérite de USER + validation, suppression, gestion articles/catégories/paramètres, dashboard global.
+\end{description}
+
+\section{Besoins fonctionnels}
+
+\subsection{Besoins par profil — MoSCoW}
+
+\rowcolors{2}{lightgray}{white}
+\begin{longtable}{|l|l|X|l|}
+\caption{Besoins fonctionnels par profil} \label{tab:bf_profil} \\
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Réf.}} & \textcolor{white}{\textbf{Profil}} & \textcolor{white}{\textbf{Besoin fonctionnel}} & \textcolor{white}{\textbf{Priorité}} \\
+\hline
+\endfirsthead
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Réf.}} & \textcolor{white}{\textbf{Profil}} & \textcolor{white}{\textbf{Besoin fonctionnel}} & \textcolor{white}{\textbf{Priorité}} \\
+\hline
+\endhead
+BF-01 & USER & Connexion email/mot de passe & Must \\
+BF-02 & USER & Déconnexion & Must \\
+BF-03 & USER & Créer un client & Must \\
+BF-04 & USER & Modifier un client & Must \\
+BF-05 & USER & Consulter la liste des clients & Must \\
+BF-06 & USER & Créer une facture & Must \\
+BF-07 & USER & Ajouter des lignes d'articles & Must \\
+BF-08 & USER & Remise par ligne (\%) & Must \\
+BF-09 & USER & Remise globale (\%) & Must \\
+BF-10 & USER & Calcul auto HT/TVA/TTC & Must \\
+BF-11 & USER & Modifier une facture & Must \\
+BF-12 & USER & Télécharger PDF (+ QR code + signature) & Must \\
+BF-13 & USER & Suivi statut (Draft/En attente/Payée/Rejetée) & Must \\
+BF-14 & USER & Mode paiement, dates dépôt/encaissement & Must \\
+BF-15 & USER & Dashboard KPIs & Should \\
+BF-16 & USER & Filtres + recherche factures & Should \\
+BF-17 & USER & Changer la langue (FR/EN) & Could \\
+BF-18 & ADMIN & Valider une facture & Must \\
+BF-19 & ADMIN & Supprimer facture/client & Must \\
+BF-20 & ADMIN & CRUD Articles & Must \\
+BF-21 & ADMIN & CRUD Catégories + TVA & Must \\
+BF-22 & ADMIN & Paramètres entreprise & Must \\
+BF-23 & ADMIN & Dashboard analytique global & Must \\
+BF-24 & ADMIN & Graphique CA mensuel & Should \\
+BF-25 & ADMIN & Export Excel + Archivage ZIP annuel & Should \\
+\hline
+\end{longtable}
+
+\subsection{Priorisation MoSCoW}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Tableau MoSCoW}
+\label{tab:moscow}
+\begin{tabularx}{\textwidth}{|l|X|c|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Catégorie}} & \textcolor{white}{\textbf{Fonctionnalités}} & \textcolor{white}{\textbf{Nb}} \\
+\hline
+Must have & Auth, CRUD Factures/Clients, calculs auto, PDF, USER/ADMIN, validation & 18 \\
+Should have & Dashboard KPIs, graphique CA, filtres, export Excel, archivage & 5 \\
+Could have & Langue, notifications toast, animations avancées & 3 \\
+Won't have (V1) & App mobile, JWT prod, archivage cloud, multi-devise complet & 4 \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{Besoins non fonctionnels}
+
+\subsection{Performance}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{BNF — Performance}
+\label{tab:bnf_perf}
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Réf.}} & \textcolor{white}{\textbf{Critère}} & \textcolor{white}{\textbf{Cible}} \\
+\hline
+BNF-01 & Chargement initial & $<$ 2s \\
+BNF-02 & Réponse Firebase & $<$ 500ms \\
+BNF-03 & Génération PDF & $<$ 1s \\
+BNF-04 & Affichage dashboard & $<$ 1,5s \\
+BNF-05 & Disponibilité & $\geq$ 99\% \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Sécurité et conformité}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{BNF — Sécurité}
+\label{tab:bnf_secu}
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Réf.}} & \textcolor{white}{\textbf{Critère}} & \textcolor{white}{\textbf{Mécanisme}} \\
+\hline
+BNF-06 & Auth obligatoire & PrivateRoute \\
+BNF-07 & Séparation USER/ADMIN & isAdmin côté client \\
+BNF-08 & Conformité Loi 09-08/RGPD & Pas de stockage passwords \\
+BNF-09 & Secrets hors code & Fichier .env (non commité) \\
+BNF-10 & Validation entrées & Formik + Yup + parseFloat() \\
+BNF-11 & HTTPS & Firebase natif \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Limites nécessitant un backend}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Limites actuelles et prérequis backend pour la production}
+\label{tab:limites_backend}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Point}} & \textcolor{white}{\textbf{Note}} \\
+\hline
+Envoi email & Utilise \texttt{mailto:} (ou EmailJS optionnel) — backend SMTP requis en production \\
+JWT réel & localStorage démo — Firebase Auth activable pour JWT sécurisé \\
+Archivage annuel & Export ZIP disponible — stockage cloud + rétention serveur requis pour légalité 10 ans \\
+Multi-devise/société & Interface disponible — architecture comptable complète prévue en V2 \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{Matrice de traçabilité}
+
+\begin{landscape}
+\rowcolors{2}{lightgray}{white}
+\begin{longtable}{|l|X|l|l|}
+\caption{Matrice de traçabilité Besoins → Fonctionnalités → Modules → Tests} \label{tab:tracabilite} \\
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Besoin}} & \textcolor{white}{\textbf{Fonctionnalité}} & \textcolor{white}{\textbf{Module}} & \textcolor{white}{\textbf{Test}} \\
+\hline
+\endfirsthead
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Besoin}} & \textcolor{white}{\textbf{Fonctionnalité}} & \textcolor{white}{\textbf{Module}} & \textcolor{white}{\textbf{Test}} \\
+\hline
+\endhead
+BF-01/02 & Login/Logout & AuthContext.js, Login.js & TC-01 \\
+BF-03/05 & CRUD Clients & Clients.js, firebaseService.js & TC-02 \\
+BF-06/07 & Création facture & FactureForm.js & TC-03 \\
+BF-08/09 & Remises ligne + globale & FactureForm.js & TC-04 \\
+BF-10 & Calcul auto HT/TVA/TTC & FactureForm.js & TC-05 \\
+BF-11 & Modification facture & FactureForm.js (edit mode) & TC-06 \\
+BF-12 & PDF + QR code + signature & pdfGenerator.js & TC-07 \\
+BF-13/14 & Statuts + paiements & FactureDetail.js & TC-08 \\
+BF-15/23 & Dashboard KPIs & Dashboard.js & TC-09 \\
+BF-18 & Validation admin & FactureDetail.js & TC-10 \\
+BF-19 & Suppression (admin) & Factures.js, Clients.js & TC-11 \\
+BF-20/21 & CRUD Articles + Catégories & Articles.js, Categories.js & TC-12 \\
+BF-22 & Paramètres multi-société & Parametres.js & TC-13 \\
+BF-24 & Graphique CA mensuel & Dashboard.js (Recharts) & TC-14 \\
+BF-25 & Export Excel + Archive ZIP & excelExporter.js, archiveService.js & TC-15 \\
+BNF-06/07 & Routes protégées + rôles & PrivateRoute.js & TC-16 \\
+\hline
+\end{longtable}
+\end{landscape}

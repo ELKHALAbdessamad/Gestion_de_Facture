@@ -1,0 +1,105 @@
+% ============================================================================
+% RAPPORT PFA — Fichier maître modulaire
+% Inclut chaque chapitre depuis son fichier séparé
+% Compiler : pdflatex main.tex (depuis le dossier docs/chapitres/)
+% ============================================================================
+
+\documentclass[12pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\geometry{a4paper, margin=2.5cm, headheight=15pt}
+\usepackage{fancyhdr}
+\usepackage{emptypage}
+\usepackage{pdflscape}
+\usepackage{titlesec}
+\usepackage{setspace}
+\setstretch{1.2}
+\usepackage[table,xcdraw]{xcolor}
+\definecolor{emsiblue}{RGB}{0,84,166}
+\definecolor{goldColor}{RGB}{212,168,83}
+\definecolor{lightblue}{RGB}{217,234,247}
+\definecolor{lightgray}{RGB}{242,242,242}
+\definecolor{darkgray}{RGB}{89,89,89}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.96,0.96,0.94}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{longtable}
+\usepackage{caption}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,positioning}
+\usepackage{listings}
+\lstdefinestyle{codestyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{emsiblue},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true, captionpos=b,
+    keepspaces=true, numbers=left, numbersep=5pt,
+    showstringspaces=false, tabsize=2,
+    frame=single, framerule=0.5pt
+}
+\lstset{style=codestyle}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=emsiblue,
+  urlcolor=cyan, citecolor=emsiblue,
+  pdftitle={Rapport PFA - Gestion des Factures},
+  pdfauthor={Abdessamad ELKHAL, Yahya FALHAOUI}}
+\usepackage{acronym}
+\usepackage[toc,page]{appendix}
+\usepackage{amsmath}
+\usepackage{enumitem}
+\usepackage{ragged2e}
+% Chemin des figures
+\graphicspath{{/Users/abdooelk/gestion-des-factures/docs/figures/}}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textcolor{darkgray}{\leftmark}}
+\fancyhead[R]{}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0pt}
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{emsiblue}}
+  {\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titlespacing*{\chapter}{0pt}{-20pt}{40pt}
+\newcommand{\placeholder}[1]{%
+  \begin{center}
+  \fbox{\parbox{0.85\textwidth}{%
+    \centering\vspace{0.5cm}
+    \textcolor{darkgray}{\textit{[PLACEHOLDER : #1]}}
+    \vspace{0.5cm}}}
+  \end{center}}
+
+% ============================================================================
+\begin{document}
+\justifying
+\pagenumbering{roman}
+
+% ── Inclure les chapitres séparés ────────────────────────────────────────────
+% Pages préliminaires (incluses depuis le rapport principal)
+% Utiliser rapport_pfa.tex pour le document complet
+
+% ── Chapitres ────────────────────────────────────────────────────────────────
+\pagenumbering{arabic}
+
+\include{ch1_exploration_probleme}
+\include{ch2_analyse_strategique}
+\include{ch3_cadrage}
+\include{ch4_specification_besoins}
+\include{ch5_planification}
+
+\end{document}

@@ -1,0 +1,191 @@
+% ============================================================================
+% CHAPITRE 5 — Planification & Management de Projet
+% ============================================================================
+
+\chapter{Planification \& Management de Projet}
+
+Ce chapitre démontre que le projet est \textbf{géré professionnellement} : planning réaliste, rôles clairs, risques identifiés.
+
+\section{Work Breakdown Structure (WBS)}
+
+\subsection{Décomposition des livrables — 6 lots}
+
+\begin{description}
+    \item[\textbf{Lot 1 — Initialisation :}] Configuration React, Firebase, JSON Server, structure dossiers.
+    \item[\textbf{Lot 2 — Auth \& Sécurité :}] Connexion/déconnexion, rôles USER/ADMIN, PrivateRoute.
+    \item[\textbf{Lot 3 — Données :}] CRUD Clients (Firebase), CRUD Articles/Catégories (JSON Server), Paramètres.
+    \item[\textbf{Lot 4 — Facturation :}] Formulaire facture, calculs auto, remises, TVA catégorie, paiements, validation.
+    \item[\textbf{Lot 5 — PDF \& Dashboard :}] PDF + QR + signature, KPIs, graphique CA, export Excel, archivage ZIP.
+    \item[\textbf{Lot 6 — Design \& Finalisation :}] Glassmorphism, animations 3D Framer Motion, Lordicon, tests, documentation.
+\end{description}
+
+\begin{figure}[H]
+\centering
+\placeholder{Diagramme WBS — \texttt{figures/wbs\_diagram.png}}
+\caption{Work Breakdown Structure — 6 lots}
+\label{fig:wbs}
+\end{figure}
+
+\section{Planification et Diagramme de Gantt}
+
+\subsection{Tableau des tâches}
+
+\rowcolors{2}{lightgray}{white}
+\begin{longtable}{|l|l|X|l|l|}
+\caption{Tableau des tâches du projet} \label{tab:taches} \\
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Code}} & \textcolor{white}{\textbf{Lot}} & \textcolor{white}{\textbf{Tâche}} & \textcolor{white}{\textbf{Durée}} & \textcolor{white}{\textbf{Antér.}} \\
+\hline
+\endfirsthead
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Code}} & \textcolor{white}{\textbf{Lot}} & \textcolor{white}{\textbf{Tâche}} & \textcolor{white}{\textbf{Durée}} & \textcolor{white}{\textbf{Antér.}} \\
+\hline
+\endhead
+T1.1 & L1 & Config React + dossiers & 2j & -- \\
+T1.2 & L1 & Config Firebase & 1j & T1.1 \\
+T1.3 & L1 & Config JSON Server & 1j & T1.1 \\
+T2.1 & L2 & AuthContext + demoAuthService & 2j & T1.2 \\
+T2.2 & L2 & Page Login + PrivateRoute & 2j & T2.1 \\
+T3.1 & L3 & firebaseService (CRUD clients/factures) & 3j & T2.2 \\
+T3.2 & L3 & jsonService (articles/catégories) & 2j & T2.2 \\
+T3.3 & L3 & Pages Clients + Articles + Catégories & 4j & T3.1 \\
+T4.1 & L4 & FactureForm (structure + client) & 3j & T3.1 \\
+T4.2 & L4 & Calculs HT/TVA/TTC + remises & 3j & T4.1 \\
+T4.3 & L4 & Suivi paiements + statuts & 2j & T4.2 \\
+T4.4 & L4 & FactureDetail + validation admin & 3j & T4.2 \\
+T5.1 & L5 & PDF + QR code + signature & 4j & T4.4 \\
+T5.2 & L5 & Dashboard KPIs + graphique & 3j & T4.4 \\
+T5.3 & L5 & Export Excel + Archivage ZIP & 2j & T5.2 \\
+T6.1 & L6 & Glassmorphism + Framer Motion & 4j & T5.3 \\
+T6.2 & L6 & Tests + corrections + documentation & 5j & T6.1 \\
+\hline
+\end{longtable}
+
+\subsection{Diagramme de Gantt}
+
+\begin{figure}[H]
+\centering
+\placeholder{Diagramme de Gantt — \texttt{figures/gantt\_diagram.png}\\16 semaines · Jalons par sprint (S2, S4, S6, S8, S10, S12, S14, S16)}
+\caption{Diagramme de Gantt — 16 semaines}
+\label{fig:gantt}
+\end{figure}
+
+\subsection{Chemin critique}
+
+\textbf{T1.1 → T1.2 → T2.1 → T2.2 → T3.1 → T4.1 → T4.2 → T4.4 → T5.1 → T5.2 → T6.1 → T6.2}
+
+La tâche critique est \textbf{T4.2} (calculs automatiques) : un blocage aurait impacté 6 tâches dépendantes.
+
+\section{Matrice RACI}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Matrice RACI}
+\label{tab:raci}
+\begin{tabularx}{\textwidth}{|X|c|c|c|c|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Activité}} & \textcolor{white}{\textbf{ELKHAL}} & \textcolor{white}{\textbf{FALHAOUI}} & \textcolor{white}{\textbf{Encadrants}} & \textcolor{white}{\textbf{Jury}} \\
+\hline
+Analyse besoins & R & C & A & I \\
+Architecture & R & C & C & I \\
+Développement Frontend & R & R & I & -- \\
+Config Firebase & R & C & I & -- \\
+JSON Server & C & R & I & -- \\
+PDF + QR + Signature & R & C & I & -- \\
+Design glassmorphism & C & R & C & -- \\
+Animations 3D & R & C & I & -- \\
+Tests & R & R & I & -- \\
+Tests utilisateurs & C & C & I & A \\
+Rapport PFA & R & R & C & A \\
+Soutenance & R & R & I & A \\
+\hline
+\end{tabularx}
+\end{table}
+
+\textit{R=Responsible · A=Accountable · C=Consulted · I=Informed}
+
+\section{Gestion des risques et Analyse Pareto}
+
+\subsection{Registre des risques}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Registre des risques — Probabilité × Impact}
+\label{tab:risques}
+\begin{tabularx}{\textwidth}{|l|X|c|c|c|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Réf.}} & \textcolor{white}{\textbf{Risque}} & \textcolor{white}{\textbf{Prob.}} & \textcolor{white}{\textbf{Impact}} & \textcolor{white}{\textbf{Score}} \\
+\hline
+R1 & Erreurs NaN (champs vides) & 4 & 5 & \textbf{20} \\
+R2 & Quota Firebase dépassé & 2 & 5 & \textbf{10} \\
+R3 & Régression code & 3 & 4 & \textbf{12} \\
+R4 & Incompatibilité npm & 3 & 3 & \textbf{9} \\
+R5 & PDF mal formaté & 4 & 4 & \textbf{16} \\
+R6 & Auth localStorage peu sécurisée & 3 & 3 & \textbf{9} \\
+R7 & Retard rédaction rapport & 3 & 4 & \textbf{12} \\
+R8 & Perte données Firebase & 1 & 5 & \textbf{5} \\
+R9 & Perf animations mobile & 3 & 2 & \textbf{6} \\
+R10 & JSON Server indisponible & 2 & 3 & \textbf{6} \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Analyse Pareto}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=0.85\textwidth, height=7cm,
+    ybar, bar width=0.5cm,
+    xlabel={Risques (triés par score décroissant)},
+    ylabel={Score},
+    xtick=data,
+    xticklabels={R1,R5,R3,R7,R2,R4,R6,R9,R10,R8},
+    title={Analyse Pareto des risques},
+    ymin=0, ymax=25, nodes near coords,
+    ]
+\addplot[fill=emsiblue!70] coordinates {
+    (1,20)(2,16)(3,12)(4,12)(5,10)(6,9)(7,9)(8,6)(9,6)(10,5)
+};
+\end{axis}
+\end{tikzpicture}
+\caption{Pareto — R1+R5 = 38\% du risque total}
+\label{fig:pareto_risques}
+\end{figure}
+
+\subsection{Plans de mitigation}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Mitigation des 3 risques critiques}
+\label{tab:mitigation}
+\begin{tabularx}{\textwidth}{|l|X|X|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Risque}} & \textcolor{white}{\textbf{Mitigation}} & \textcolor{white}{\textbf{Contingence}} \\
+\hline
+R1 — NaN & \texttt{parseFloat()||0} systématique & Bloquer soumission si NaN détecté \\
+R5 — PDF & Tester avec données réelles chaque sprint & Tableau simplifié 2 colonnes \\
+R3 — Régression & Tests manuels après chaque modif, Git & git revert, branche stable \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{Outils et critères de réussite}
+
+\subsection{Outils de pilotage}
+\begin{itemize}
+    \item \textbf{Git/GitHub} : versioning, branches feature
+    \item \textbf{Trello} : Kanban (Backlog / En cours / Terminé / Testé)
+    \item \textbf{WhatsApp} : communication équipe
+    \item \textbf{Google Meet} : réunions hebdomadaires avec encadrants
+\end{itemize}
+
+\subsection{KPIs de réussite}
+
+\textbf{Techniques :} 100\% Must have implémentés ; 0 erreur calcul ; PDF $<$ 1s ; Lighthouse $\geq$ 80.
+
+\textbf{Managériaux :} Rapport $\geq$ 80 pages ; soutenance fév 2026 ; note $\geq$ 14/20.

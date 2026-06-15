@@ -1,0 +1,228 @@
+% ============================================================================
+% CHAPITRE 2 — Analyse Stratégique & Étude de Marché
+% ============================================================================
+
+\chapter{Analyse Stratégique \& Étude de Marché}
+
+Après avoir prouvé que le problème existe (Chapitre 1), ce chapitre démontre que le \textbf{marché est favorable}. L'analyse SWOT synthétise l'ensemble des analyses — elle n'est jamais un point de départ.
+
+\section{Présentation du secteur et tendances}
+
+\subsection{Taille du marché, chiffres clés, tendances}
+\begin{itemize}
+    \item \textbf{Taille du marché :} 10,4 milliards USD en 2024 (Statista, 2024)
+    \item \textbf{Taux de croissance :} CAGR de 12,8\% sur 2024-2030
+    \item \textbf{Marché marocain SaaS B2B :} 2,3 milliards MAD en 2024 (HCP, 2023)
+    \item \textbf{Pénétration digital PME Maroc :} 23\% disposent d'un outil ERP/facturation (CGEM, 2023)
+    \item \textbf{Facturation électronique :} Obligatoire France 2026, discussions avancées au Maroc
+\end{itemize}
+
+\subsection{Acteurs principaux et dynamiques du secteur}
+
+Le secteur est structuré en trois niveaux : ERP généralistes (SAP, Oracle), solutions PME (QuickBooks, Sage, Zoho) et micro-solutions (Indy, Factur-X). Notre solution cible le segment inférieur, peu servi.
+
+\section{Analyse PESTEL}
+
+\subsection{Facteurs Politique, Économique et Social}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Analyse PESTEL — Facteurs PES}
+\label{tab:pestel_pes}
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Dim.}} & \textcolor{white}{\textbf{Facteur}} & \textcolor{white}{\textbf{Impact}} \\
+\hline
+Politique & Obligation facturation électronique (France 2026, Maroc en cours) & Positif \\
+Politique & Plan Maroc Digital 2030 & Positif \\
+Politique & Loi 09-08 / RGPD données personnelles & Contrainte \\
+Économique & Marché SaaS +12,8\%/an & Positif \\
+Économique & Coûts cloud réduits (Firebase gratuit) & Positif \\
+Social & Boom du freelancing Maroc +18\%/an & Positif \\
+Social & Demande interfaces modernes & Opportunité \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Facteurs Technologique, Environnemental et Légal}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Analyse PESTEL — Facteurs TEL}
+\label{tab:pestel_tel}
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Dim.}} & \textcolor{white}{\textbf{Facteur}} & \textcolor{white}{\textbf{Impact}} \\
+\hline
+Technologique & React 19, Firebase, bibliothèques open source matures & Positif \\
+Technologique & IA générative pour auto-complétion (future) & Opportunité \\
+Technologique & Évolution rapide des frameworks & Risque \\
+Environnemental & Réduction papier via facturation électronique & Positif \\
+Légal & Mentions légales obligatoires sur factures & Contrainte \\
+Légal & Archivage légal 10 ans & Exigence \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{Étude concurrentielle}
+
+\subsection{Tableau des concurrents}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Benchmarking — Marché marocain et international}
+\label{tab:concurrents}
+\begin{tabularx}{\textwidth}{|l|X|l|l|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Solution}} & \textcolor{white}{\textbf{Description}} & \textcolor{white}{\textbf{Prix/mois}} & \textcolor{white}{\textbf{Type}} \\
+\hline
+Sage Maroc & ERP comptabilité adapté DGI & 500-2000 MAD & Direct \\
+Ciel Compta Maroc & Facturation + comptabilité & 300-800 MAD & Direct \\
+Acosys & ERP marocain intégré & 400-1500 MAD & Direct \\
+WinFact Maroc & Facturation desktop Maroc & 150-400 MAD & Direct \\
+LogiCom & Gestion commerciale & 200-600 MAD & Direct \\
+Excel/Word & Bureautique générique & 0 MAD & Indirect \\
+\textbf{Notre solution} & Web React/Firebase moderne & 149-299 MAD & --- \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Analyse comparative}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Forces et faiblesses des concurrents}
+\label{tab:analyse_concurrents}
+\begin{tabularx}{\textwidth}{|l|X|X|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Solution}} & \textcolor{white}{\textbf{Forces}} & \textcolor{white}{\textbf{Faiblesses}} \\
+\hline
+Sage Maroc & Conforme DGI, support local & Prix élevé, complexe, formation longue \\
+Ciel Maroc & Fiscalité marocaine, FR & Desktop uniquement, coûteux \\
+WinFact & Abordable, offline & Pas de dashboard, pas de PDF auto \\
+Excel/Word & Gratuit, connu & Erreurs, pas d'automatisation \\
+\textbf{Notre solution} & 100\% web, design glassmorphism, calculs auto, rôles, PDF instantané, prix compétitif & V1.0, non certifiée DGI \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{Les 5 Forces de Porter}
+
+\begin{enumerate}
+    \item \textbf{Menace nouveaux entrants (Élevée)} : Barrière faible grâce aux technologies open source.
+    \item \textbf{Pouvoir fournisseurs (Faible)} : Firebase/React gratuits.
+    \item \textbf{Pouvoir clients (Moyen)} : Faible coût de changement de solution.
+    \item \textbf{Menace substituts (Élevée)} : Excel reste omniprésent.
+    \item \textbf{Intensité concurrentielle (Élevée)} : Marché fragmenté, peu adapté aux PME francophones.
+\end{enumerate}
+
+Malgré cette concurrence, le positionnement différencié (design, prix, spécialisation PME) rend le secteur attractif.
+
+\section{Analyse SWOT consolidée}
+
+\begin{table}[H]
+\centering
+\caption{Analyse SWOT consolidée}
+\label{tab:swot}
+\begin{tabular}{|p{0.45\textwidth}|p{0.45\textwidth}|}
+\hline
+\rowcolor{emsiblue}\multicolumn{1}{|c|}{\textcolor{white}{\textbf{FORCES}}} & \multicolumn{1}{c|}{\textcolor{white}{\textbf{FAIBLESSES}}} \\
+\hline
+\begin{itemize}[leftmargin=*, noitemsep]
+    \item Glassmorphism + animations 3D uniques
+    \item React 19 + Firebase 12 (tech récentes)
+    \item Calculs automatiques sans erreur
+    \item Rôles USER/ADMIN différenciés
+    \item PDF + QR code + signature numérique
+    \item Bilingue FR/EN
+    \item Export Excel + archivage ZIP
+\end{itemize}
+&
+\begin{itemize}[leftmargin=*, noitemsep]
+    \item Dépendance Firebase (vendor lock-in)
+    \item Email en mode démo (mailto:)
+    \item Auth localStorage (pas JWT serveur)
+    \item Multi-devise/société partiels (V2)
+    \item Non certifiée DGI Maroc
+\end{itemize}
+\\
+\hline
+\rowcolor{lightblue}\multicolumn{1}{|c|}{\textbf{OPPORTUNITÉS}} & \multicolumn{1}{c|}{\textbf{MENACES}} \\
+\hline
+\begin{itemize}[leftmargin=*, noitemsep]
+    \item Obligation facturation électronique
+    \item Freelancing +18\%/an Maroc
+    \item IA auto-complétion (V2)
+    \item App mobile (V3)
+    \item Paiement en ligne (CMI, Stripe)
+\end{itemize}
+&
+\begin{itemize}[leftmargin=*, noitemsep]
+    \item Concurrents établis (Sage, Zoho)
+    \item Évolution rapide technologies
+    \item Coûts Firebase à grande échelle
+    \item Copie facile du concept
+\end{itemize}
+\\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Stratégies croisées}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Stratégies SO / ST / WO / WT}
+\label{tab:strategies_swot}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Stratégie}} & \textcolor{white}{\textbf{Action concrète}} \\
+\hline
+SO — Attaque & Capitaliser sur le design + obligation légale pour conquérir les freelances \\
+ST — Défense & UX glassmorphism pour se différencier des concurrents génériques \\
+WO — Amélioration & Activer Firebase Auth + backend SMTP en V2 \\
+WT — Survie & Documenter l'API pour migration si Firebase devient coûteux \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{Étude de la demande}
+
+\subsection{Comportement consommateurs}
+
+Les résultats du sondage (Chapitre 1) montrent 83\% d'intention d'utilisation. Le comportement typique : essai gratuit attendu, décision rapide (\textless 2 semaines), sensibilité au prix (jusqu'à 300 MAD/mois si valeur démontrée).
+
+\subsection{Tarification SaaS — 3 paliers}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Proposition de tarification}
+\label{tab:tarification}
+\begin{tabular}{|l|c|l|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Plan}} & \textcolor{white}{\textbf{Prix/mois}} & \textcolor{white}{\textbf{Fonctionnalités}} \\
+\hline
+Starter & Gratuit & 5 factures/mois, 1 utilisateur \\
+Pro & 149 MAD & Illimité, 3 utilisateurs, dashboard \\
+Business & 299 MAD & 10 utilisateurs, rôles, archivage \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Positionnement et UVP}
+
+\begin{center}
+\fbox{\parbox{0.85\textwidth}{
+\centering\vspace{0.3cm}
+\textbf{UVP : «La seule application de facturation conçue pour les PME/freelances francophones combinant automatisation complète, design glassmorphism et tableau de bord analytique — à prix accessible.»}
+\vspace{0.3cm}
+}}
+\end{center}
+
+Les trois axes de différenciation : \textbf{Design UX premium} (glassmorphism, 3D, Lordicon), \textbf{Spécialisation métier} (TVA par catégorie, remises, validation), \textbf{Architecture hybride} (Firebase + JSON Server).

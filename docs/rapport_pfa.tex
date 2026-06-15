@@ -53,6 +53,9 @@
 \usepackage{tikz}
 \usetikzlibrary{shapes,arrows,positioning}
 
+% Chemin des images (relatif au fichier .tex)
+\graphicspath{{/Users/abdooelk/gestion-des-factures/docs/figures/}}
+
 % ---- Code source ----
 \usepackage{listings}
 \lstdefinestyle{codestyle}{
@@ -138,13 +141,14 @@
 % PAGE DE GARDE
 % ============================================================================
 \begin{titlepage}
+
+% ── Logo EMSI en haut à gauche ───────────────────────────────────────────────
+\begin{flushleft}
+  \includegraphics[width=5cm]{/Users/abdooelk/gestion-des-factures/docs/figures/logo_emsi.png}
+\end{flushleft}
+
+\vspace{-1cm}
 \centering
-
-% Logo EMSI
-\vspace*{0.5cm}
-\placeholder{Logo EMSI — \texttt{figures/logo\_emsi.png}}
-\vspace{0.5cm}
-
 \rule{\linewidth}{1.5pt}\\[0.3cm]
 {\large\textbf{École Marocaine des Sciences de l'Ingénieur (EMSI)}}\\
 {\normalsize Département Génie Informatique — 4ème Année}\\
@@ -197,25 +201,44 @@
 \chapter*{Dédicaces}
 \addcontentsline{toc}{chapter}{Dédicaces}
 
-\vspace{1cm}
+\vspace*{3cm}
 
-À nos chers parents, qui n'ont jamais cessé de nous encourager et de nous soutenir tout au long de notre parcours académique. Votre amour, vos sacrifices et votre confiance inconditionnelle ont été notre source de force et de motivation.
+\begin{center}
 
-\vspace{0.5cm}
+\textit{À nos très chers parents,}\\[0.4cm]
+\textit{qui ont tout sacrifié pour nous offrir la meilleure éducation possible.}\\[0.4cm]
+\textit{Vos prières, votre amour et votre soutien indéfectible}\\
+\textit{ont été notre lumière dans les moments les plus difficiles.}\\[0.4cm]
+\textit{Que Dieu vous accorde santé, bonheur et longue vie.}
 
-À nos familles, qui ont su nous entourer de bienveillance et nous offrir un cadre propice à l'épanouissement personnel et intellectuel.
+\vspace{1.5cm}
 
-\vspace{0.5cm}
+\textit{À nos frères et sœurs,}\\[0.4cm]
+\textit{pour leur présence, leur joie et leur soutien au quotidien.}
 
-À nos amis et collègues de promotion de l'EMSI, pour les moments de solidarité, d'entraide et de partage qui ont rendu ce parcours plus riche et mémorable.
+\vspace{1.5cm}
 
-\vspace{0.5cm}
+\textit{À nos encadrants,}\\[0.4cm]
+\textit{Pr. Souissi Abdelmoughi, Pr. Hind Ouzif et Pr. Asmahane Tahiri,}\\[0.4cm]
+\textit{pour leur bienveillance, leur rigueur et leur disponibilité}\\
+\textit{tout au long de ce projet.}
 
-À nos encadrants, Pr. Souissi Abdelmoughi, Pr. Hind Ouzif et Pr. Asmahane Tahiri, pour leur dévouement, leur pédagogie et leur disponibilité tout au long de ce projet.
+\vspace{1.5cm}
 
-\vspace{0.5cm}
+\textit{À tous nos amis et collègues de promotion,}\\[0.4cm]
+\textit{pour les moments de travail partagés, les encouragements}\\
+\textit{et la belle amitié qui nous unit.}
 
-À tous ceux qui croient en la force de l'innovation technologique pour améliorer le quotidien professionnel.
+\vspace{1.5cm}
+
+\textit{À tous ceux qui, de près ou de loin,}\\[0.4cm]
+\textit{ont contribué à la réussite de ce travail.}
+
+\vspace{2cm}
+
+\textit{\textbf{Abdessamad ELKHAL \& Yahya FALHAOUI}}
+
+\end{center}
 
 % ============================================================================
 % REMERCIEMENTS
