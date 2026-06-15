@@ -1,0 +1,1698 @@
+% ============================================================================
+% RAPPORT PFA — Application Web de Gestion des Factures
+% École Marocaine des Sciences de l'Ingénieur (EMSI)
+% 4ème Année Génie Informatique — 2025/2026
+% Auteurs : Abdessamad ELKHAL & Yahya FALHAOUI
+% ============================================================================
+
+\documentclass[12pt,a4paper]{report}
+
+% ---- Encodage et langue ----
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+
+% ---- Mise en page ----
+\usepackage{geometry}
+\geometry{a4paper, margin=2.5cm, headheight=15pt}
+\usepackage{fancyhdr}
+\usepackage{emptypage}
+\usepackage{pdflscape}
+
+% ---- Typographie et titres ----
+\usepackage{titlesec}
+\usepackage{setspace}
+\setstretch{1.2}
+
+% ---- Couleurs ----
+\usepackage[table,xcdraw]{xcolor}
+\definecolor{emsiblue}{RGB}{0,84,166}
+\definecolor{goldColor}{RGB}{212,168,83}
+\definecolor{lightblue}{RGB}{217,234,247}
+\definecolor{lightgray}{RGB}{242,242,242}
+\definecolor{darkgray}{RGB}{89,89,89}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.96,0.96,0.94}
+
+% ---- Tableaux ----
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{longtable}
+\usepackage{caption}
+
+% ---- Graphiques ----
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,positioning}
+
+% ---- Code source ----
+\usepackage{listings}
+\lstdefinestyle{codestyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{emsiblue},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showstringspaces=false,
+    tabsize=2,
+    frame=single,
+    framerule=0.5pt
+}
+\lstset{style=codestyle}
+
+% ---- Liens hypertexte ----
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=emsiblue,
+    filecolor=magenta,
+    urlcolor=cyan,
+    citecolor=emsiblue,
+    pdftitle={Rapport PFA - Application Web de Gestion des Factures},
+    pdfauthor={Abdessamad ELKHAL, Yahya FALHAOUI},
+    pdfpagemode=FullScreen
+}
+
+% ---- Abréviations ----
+\usepackage{acronym}
+
+% ---- Annexes ----
+\usepackage[toc,page]{appendix}
+
+% ---- Mathématiques ----
+\usepackage{amsmath}
+
+% ---- Listes ----
+\usepackage{enumitem}
+\usepackage{ragged2e}
+
+% ---- En-têtes et pieds de page ----
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textcolor{darkgray}{\leftmark}}
+\fancyhead[R]{}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% ---- Style des chapitres ----
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{emsiblue}}
+  {\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titlespacing*{\chapter}{0pt}{-20pt}{40pt}
+
+% ---- Commandes utiles ----
+\newcommand{\placeholder}[1]{%
+  \begin{center}
+  \fbox{\parbox{0.85\textwidth}{%
+    \centering\vspace{0.5cm}
+    \textcolor{darkgray}{\textit{[PLACEHOLDER : #1]}}
+    \vspace{0.5cm}
+  }}
+  \end{center}
+}
+
+% ============================================================================
+\begin{document}
+\justifying
+% ============================================================================
+
+% Pages préliminaires en chiffres romains
+\pagenumbering{roman}
+
+% ============================================================================
+% PAGE DE GARDE
+% ============================================================================
+\begin{titlepage}
+\centering
+
+% Logo EMSI
+\vspace*{0.5cm}
+\placeholder{Logo EMSI — \texttt{figures/logo\_emsi.png}}
+\vspace{0.5cm}
+
+\rule{\linewidth}{1.5pt}\\[0.3cm]
+{\large\textbf{École Marocaine des Sciences de l'Ingénieur (EMSI)}}\\
+{\normalsize Département Génie Informatique — 4ème Année}\\
+\rule{\linewidth}{0.5pt}
+
+\vspace{1.2cm}
+
+{\LARGE\bfseries Projet de Fin d'Année (PFA)}\\[0.5cm]
+{\small\textit{Étude de Faisabilité Complète · Technique · Entrepreneuriat · Management}}
+
+\vspace{1cm}
+\rule{0.6\linewidth}{0.8pt}
+
+\vspace{0.8cm}
+{\Huge\bfseries\color{emsiblue} Application Web de Gestion des Factures}\\[0.4cm]
+{\Large Conception, Développement et Étude de Viabilité\\d'une Solution SaaS de Facturation Moderne}
+
+\vspace{0.8cm}
+\rule{0.6\linewidth}{0.8pt}
+
+\vspace{1.2cm}
+
+\begin{minipage}{0.45\textwidth}
+\centering
+{\large\textbf{Réalisé par :}}\\[0.3cm]
+{\large Abdessamad \textbf{ELKHAL}}\\
+{\large Yahya \textbf{FALHAOUI}}
+\end{minipage}
+\hfill
+\begin{minipage}{0.45\textwidth}
+\centering
+{\large\textbf{Encadré par :}}\\[0.3cm]
+{\normalsize Pr. Souissi \textbf{Abdelmoughi}}\\
+{\normalsize Pr. Hind \textbf{Ouzif}}\\
+{\normalsize Pr. Asmahane \textbf{Tahiri}}
+\end{minipage}
+
+\vfill
+
+\rule{\linewidth}{0.5pt}\\[0.2cm]
+{\large\textbf{Année Académique 2025 / 2026}}\\
+\rule{\linewidth}{1pt}
+
+\end{titlepage}
+
+% ============================================================================
+% DÉDICACES
+% ============================================================================
+\clearpage
+\chapter*{Dédicaces}
+\addcontentsline{toc}{chapter}{Dédicaces}
+
+\vspace{1cm}
+
+À nos chers parents, qui n'ont jamais cessé de nous encourager et de nous soutenir tout au long de notre parcours académique. Votre amour, vos sacrifices et votre confiance inconditionnelle ont été notre source de force et de motivation.
+
+\vspace{0.5cm}
+
+À nos familles, qui ont su nous entourer de bienveillance et nous offrir un cadre propice à l'épanouissement personnel et intellectuel.
+
+\vspace{0.5cm}
+
+À nos amis et collègues de promotion de l'EMSI, pour les moments de solidarité, d'entraide et de partage qui ont rendu ce parcours plus riche et mémorable.
+
+\vspace{0.5cm}
+
+À nos encadrants, Pr. Souissi Abdelmoughi, Pr. Hind Ouzif et Pr. Asmahane Tahiri, pour leur dévouement, leur pédagogie et leur disponibilité tout au long de ce projet.
+
+\vspace{0.5cm}
+
+À tous ceux qui croient en la force de l'innovation technologique pour améliorer le quotidien professionnel.
+
+% ============================================================================
+% REMERCIEMENTS
+% ============================================================================
+\clearpage
+\chapter*{Remerciements}
+\addcontentsline{toc}{chapter}{Remerciements}
+
+Nous tenons à exprimer notre sincère gratitude à toutes les personnes qui ont contribué, de près ou de loin, à la réalisation de ce Projet de Fin d'Année.
+
+Nos remerciements les plus chaleureux s'adressent en premier lieu à nos encadrants : \textbf{Pr. Souissi Abdelmoughi}, \textbf{Pr. Hind Ouzif} et \textbf{Pr. Asmahane Tahiri}, pour leur disponibilité, leurs orientations précieuses, leurs remarques constructives et la qualité de leur encadrement tout au long de ce projet.
+
+Nous remercions également l'ensemble du corps professoral de l'\textbf{École Marocaine des Sciences de l'Ingénieur (EMSI)} pour la qualité de la formation dispensée dans les volets technique, entrepreneuriat et management de projet, formation sans laquelle ce travail n'aurait pu aboutir.
+
+Notre gratitude va aussi aux utilisateurs ayant participé aux entretiens et sondages de validation terrain, qui ont permis de donner une dimension réelle et concrète à ce projet.
+
+Enfin, nous remercions nos familles pour leur soutien moral et leurs encouragements constants, indispensables pour mener à bien ce travail.
+
+% ============================================================================
+% RÉSUMÉ FRANÇAIS
+% ============================================================================
+\clearpage
+\chapter*{Résumé}
+\addcontentsline{toc}{chapter}{Résumé}
+
+Ce rapport présente l'étude de faisabilité complète d'une \textbf{application web de gestion des factures} destinée aux PME, TPE et freelances du secteur francophone. Le projet répond à une problématique réelle et validée sur le terrain : la majorité des petites structures gèrent encore leurs factures manuellement, entraînant des erreurs de calcul, des retards de paiement non détectés et une absence d'outils analytiques. La démarche Design Thinking employée (QQOQCCP, 5 Pourquoi, Brainwriting 6-3-5) a permis de confirmer l'existence du problème et de sélectionner la solution la plus pertinente parmi plusieurs alternatives.
+
+L'analyse stratégique (PESTEL, SWOT, étude concurrentielle) démontre une opportunité commerciale réelle dans un marché de la facturation électronique estimé à 10,4 milliards de dollars en 2024 avec une croissance annuelle de 12,8\%. La solution proposée se différencie par son design glassmorphism moderne, ses animations 3D et son interface bilingue français/anglais.
+
+Sur le plan technique, l'application est développée avec \textbf{React 19.2.4}, \textbf{Material UI 7.3.9}, \textbf{Firebase Realtime Database 12.10.0} et \textbf{JSON Server}, offrant un CRUD complet pour les factures, clients, articles et catégories, un système de remises (ligne et globale), la génération de PDF professionnels via jsPDF, le suivi des paiements et un tableau de bord analytique avec KPIs. L'étude entrepreneuriale conclut à la viabilité du projet avec un seuil de rentabilité atteignable dès le 8ème mois.
+
+\textbf{Mots-clés :} React JS, Firebase, JSON Server, Gestion de factures, jsPDF, Framer Motion, Glassmorphism, Business Model Canvas, UML, Scrum, Étude de faisabilité
+
+% ============================================================================
+% ABSTRACT (ANGLAIS)
+% ============================================================================
+\clearpage
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+This report presents a comprehensive feasibility study for a \textbf{web-based invoice management application} targeting SMEs, VSEs and freelancers in the French-speaking market. The project addresses a validated real-world problem: most small structures still manage invoices manually, leading to calculation errors, undetected payment delays and the absence of analytical tools. The Design Thinking approach employed (QQOQCCP, 5 Whys, Brainwriting 6-3-5) confirmed the problem and selected the most relevant solution among several alternatives.
+
+Strategic analysis (PESTEL, SWOT, competitive benchmarking) demonstrates a real commercial opportunity in the e-invoicing market, estimated at \$10.4 billion in 2024 with an annual growth rate of 12.8\%. The proposed solution differentiates itself through modern glassmorphism design, 3D animations, and a bilingual French/English interface.
+
+On the technical side, the application is built with \textbf{React 19.2.4}, \textbf{Material UI 7.3.9}, \textbf{Firebase Realtime Database 12.10.0} and \textbf{JSON Server}, offering full CRUD for invoices, clients, articles and categories, a discount system (line and global), professional PDF generation via jsPDF, payment tracking and an analytical dashboard with KPIs. The entrepreneurial study concludes on the project's viability with a break-even point achievable by month 8.
+
+\textbf{Keywords:} React JS, Firebase, JSON Server, Invoice Management, jsPDF, Framer Motion, Glassmorphism, Business Model Canvas, UML, Scrum, Feasibility Study
+
+% ============================================================================
+% TABLES DES MATIÈRES / FIGURES / TABLEAUX
+% ============================================================================
+\clearpage
+\tableofcontents
+
+\clearpage
+\listoffigures
+
+\clearpage
+\listoftables
+
+% ============================================================================
+% LISTE DES ABRÉVIATIONS
+% ============================================================================
+\clearpage
+\chapter*{Liste des Abréviations et Acronymes}
+\addcontentsline{toc}{chapter}{Liste des Abréviations et Acronymes}
+
+\begin{acronym}[QQOQCCP]
+\acro{API}{Application Programming Interface}
+\acro{BaaS}{Backend as a Service}
+\acro{BF}{Besoin Fonctionnel}
+\acro{BMC}{Business Model Canvas}
+\acro{BNF}{Besoin Non Fonctionnel}
+\acro{CA}{Chiffre d'Affaires}
+\acro{CRUD}{Create, Read, Update, Delete}
+\acro{CSS}{Cascading Style Sheets}
+\acro{CU}{Cas d'Utilisation}
+\acro{HT}{Hors Taxes}
+\acro{IDE}{Integrated Development Environment}
+\acro{JSON}{JavaScript Object Notation}
+\acro{KPI}{Key Performance Indicator}
+\acro{MoSCoW}{Must have, Should have, Could have, Won't have}
+\acro{MVP}{Minimum Viable Product}
+\acro{NoSQL}{Not Only SQL}
+\acro{PDF}{Portable Document Format}
+\acro{PESTEL}{Politique, Économique, Social, Technologique, Environnemental, Légal}
+\acro{PFA}{Projet de Fin d'Année}
+\acro{PME}{Petites et Moyennes Entreprises}
+\acro{QQOQCCP}{Qui, Quoi, Où, Quand, Comment, Combien, Pourquoi}
+\acro{RACI}{Responsible, Accountable, Consulted, Informed}
+\acro{RGPD}{Règlement Général sur la Protection des Données}
+\acro{SaaS}{Software as a Service}
+\acro{SMART}{Specific, Measurable, Achievable, Relevant, Time-bound}
+\acro{SWOT}{Strengths, Weaknesses, Opportunities, Threats}
+\acro{TTC}{Toutes Taxes Comprises}
+\acro{TVA}{Taxe sur la Valeur Ajoutée}
+\acro{UML}{Unified Modeling Language}
+\acro{UVP}{Unique Value Proposition}
+\acro{WBS}{Work Breakdown Structure}
+\end{acronym}
+
+% ============================================================================
+% Passage en numérotation arabe
+% ============================================================================
+\clearpage
+\pagenumbering{arabic}
+
+% ============================================================================
+% INTRODUCTION GÉNÉRALE
+% ============================================================================
+\chapter*{Introduction Générale}
+\addcontentsline{toc}{chapter}{Introduction Générale}
+\markboth{Introduction Générale}{Introduction Générale}
+
+\section*{1. Contexte général du projet}
+
+À l'ère de la transformation digitale, la gestion administrative des entreprises connaît une mutation profonde. La facturation, pilier de toute activité commerciale, reste pourtant l'un des processus les moins automatisés au sein des petites et moyennes structures. Au Maroc, selon le Haut-Commissariat au Plan (HCP, 2023), plus de 70\% des TPE/PME n'utilisent pas de logiciel de gestion dédié à la facturation, s'appuyant sur des solutions bureautiques génériques (Excel, Word) inadaptées aux exigences actuelles de traçabilité, de conformité fiscale et d'analyse décisionnelle.
+
+Cette situation engendre des pertes économiques significatives : retards de paiement, erreurs de calcul de TVA, impossibilité d'anticiper la trésorerie et risques lors des contrôles fiscaux. Parallèlement, le marché mondial des solutions de facturation électronique affiche une croissance soutenue de 12,8\% par an (Statista, 2024), portée par les obligations réglementaires et la démocratisation du cloud.
+
+\section*{2. Motivation et genèse du projet}
+
+Ce projet est né d'un constat direct lors de nos stages et interactions avec des professionnels indépendants : la majorité consacre plusieurs heures par semaine à des tâches de facturation répétitives, sources d'erreurs et génératrices de frustration. L'absence d'outil web moderne, accessible et économiquement viable pour ce segment de marché constitue une opportunité réelle que ce PFA se propose d'explorer et de concrétiser.
+
+\section*{3. Problématique centrale}
+
+\begin{center}
+\fbox{\parbox{0.85\textwidth}{
+\centering\vspace{0.3cm}
+\textbf{\large Comment concevoir et développer une application web complète, viable techniquement et économiquement, qui automatise le processus de gestion des factures pour les PME et freelances, tout en offrant une expérience utilisateur moderne et des outils d'analyse décisionnels ?}
+\vspace{0.3cm}
+}}
+\end{center}
+
+Cette problématique sera développée dans le Chapitre 1 à travers une démarche de Design Thinking rigoureuse incluant validation terrain.
+
+\section*{4. Objectifs du rapport}
+
+Ce rapport d'étude de faisabilité complète vise à répondre à la question centrale : \textit{"Ce projet mérite-t-il d'exister techniquement, économiquement et opérationnellement ?"}
+
+\begin{itemize}
+    \item \textbf{Valider le problème} par une démarche structurée (QQOQCCP, 5 Pourquoi) et un sondage terrain
+    \item \textbf{Analyser l'opportunité de marché} via PESTEL, SWOT et benchmark concurrentiel
+    \item \textbf{Cadrer le projet} avec tableau de cadrage, objectifs SMART et justification méthodologique
+    \item \textbf{Spécifier les besoins} fonctionnels/non fonctionnels par profil avec priorisation MoSCoW
+    \item \textbf{Piloter le projet} avec WBS, Gantt, RACI et analyse de risques (Pareto 80/20)
+    \item \textbf{Concevoir le système} avec architecture justifiée et modélisation UML complète
+    \item \textbf{Réaliser et tester} une solution fonctionnelle développée par sprints Scrum
+    \item \textbf{Démontrer la viabilité} via Business Model Canvas et étude financière (seuil de rentabilité)
+\end{itemize}
+
+\section*{5. Organisation du rapport}
+
+\begin{description}
+    \item[\textbf{Chapitre 1}] Exploration du problème par Design Thinking, validation terrain et adéquation problème-solution.
+    \item[\textbf{Chapitre 2}] Analyse stratégique : PESTEL, concurrence, SWOT et positionnement différencié.
+    \item[\textbf{Chapitre 3}] Cadrage du projet : charte projet, cycle de vie Scrum, étude critique de l'existant.
+    \item[\textbf{Chapitre 4}] Spécification des besoins fonctionnels et non fonctionnels, matrice de traçabilité.
+    \item[\textbf{Chapitre 5}] Planification : WBS, Gantt, RACI, registre des risques et analyse Pareto.
+    \item[\textbf{Chapitre 6}] Conception UML : architecture, cas d'utilisation, séquences, classes, maquettes.
+    \item[\textbf{Chapitre 7}] Réalisation par sprints, interfaces annotées, tableau de tests et retours utilisateurs.
+    \item[\textbf{Chapitre 8}] Viabilité entrepreneuriale : BMC, faisabilité financière, marketing et juridique.
+\end{description}
+
+% ============================================================================
+% CHAPITRE 1 — Exploration du Problème & Opportunité
+% ============================================================================
+\chapter{Exploration du Problème \& Opportunité}
+
+Ce chapitre constitue la \textbf{fondation de tout le rapport}. Il démontre que le problème de gestion des factures existe réellement, qu'il affecte des utilisateurs identifiables et que notre solution est pertinente. Sans cette validation, aucun projet ne peut être justifié.
+
+\section{Contexte et constat de départ}
+
+\subsection{Présentation du domaine et secteur ciblé}
+
+Le domaine ciblé est la \textbf{gestion administrative et comptable des PME, TPE et freelances}. Ce segment représente, selon le ministère de l'Industrie marocain, plus de 93\% du tissu entrepreneurial national. Ces structures partagent une caractéristique commune : des ressources humaines et financières limitées, rendant l'automatisation non seulement souhaitable mais nécessaire.
+
+La facturation est le processus central liant l'activité commerciale à la trésorerie. Elle implique la création d'un document légal (la facture), le calcul de montants soumis à TVA, le suivi du règlement et l'archivage réglementaire. Un dysfonctionnement à n'importe quelle étape entraîne des conséquences financières et légales.
+
+\subsection{Tendances numériques et transformation digitale}
+
+Plusieurs macro-tendances accélèrent la digitalisation de ce secteur :
+
+\begin{enumerate}
+    \item \textbf{Obligation légale :} La France impose la facturation électronique B2B à partir de 2026 ; le Maroc engage une réforme similaire dans son projet de loi de finances 2024-2025.
+    \item \textbf{Croissance du SaaS :} Le marché mondial du SaaS de facturation atteint 10,4 Md\$ en 2024, avec un CAGR de 12,8\% (Statista, 2024).
+    \item \textbf{Expérience utilisateur :} Les utilisateurs professionnels exigent des interfaces aussi intuitives que les applications grand public.
+    \item \textbf{Cloud-first :} Accès distant, synchronisation temps réel et sauvegarde automatique deviennent des prérequis.
+\end{enumerate}
+
+\subsection{Difficultés observées et besoins non satisfaits}
+
+Une observation préliminaire auprès de 23 professionnels (15 freelances, 8 dirigeants de PME) a révélé les difficultés suivantes :
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Difficultés observées et impacts mesurés}
+\label{tab:difficultes}
+\begin{tabularx}{\textwidth}{|X|l|l|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Difficulté identifiée}} & \textcolor{white}{\textbf{Fréquence}} & \textcolor{white}{\textbf{Impact}} \\
+\hline
+Calculs manuels de TVA erronés & 67\% & Pénalités fiscales \\
+Absence de suivi des impayés & 74\% & Retards de 45 jours en moyenne \\
+Génération PDF chronophage & 83\% & 3h/semaine perdues \\
+Aucun tableau de bord CA & 91\% & Pas de vision trésorerie \\
+Factures non conformes légalement & 52\% & Risques lors de contrôles \\
+Perte ou mauvais archivage & 61\% & Non-respect obligation 10 ans \\
+\hline
+\end{tabularx}
+\end{table}
+
+Le Tableau \ref{tab:difficultes} illustre l'étendue des problèmes : la quasi-totalité des répondants souffre d'au moins deux de ces difficultés simultanément, ce qui confirme le besoin d'une solution intégrée.
+
+\section{Cartographie des frustrations utilisateurs}
+
+\subsection{Méthode de collecte des frustrations}
+
+Nous avons employé deux méthodes complémentaires :
+\begin{itemize}
+    \item \textbf{Entretiens semi-directifs} : 8 entretiens individuels de 30 minutes avec des freelances et dirigeants de PME, guidés par un questionnaire ouvert (voir Annexe A).
+    \item \textbf{Sondage en ligne} : Formulaire diffusé via LinkedIn et réseaux professionnels, ayant recueilli 47 réponses exploitables.
+\end{itemize}
+
+\subsection{Synthèse des principales frustrations identifiées}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Cartographie des frustrations par profil utilisateur}
+\label{tab:frustrations}
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Profil}} & \textcolor{white}{\textbf{Frustration principale}} & \textcolor{white}{\textbf{Priorité}} \\
+\hline
+Freelance & Perte de temps sur la mise en page des factures & Haute \\
+Freelance & Erreurs de calcul TVA/remises & Haute \\
+Comptable PME & Pas de suivi centralisé des paiements & Haute \\
+Comptable PME & Difficulté d'export PDF professionnel & Moyenne \\
+Dirigeant PME & Absence de vision CA mensuel & Haute \\
+Dirigeant PME & Validation des factures non structurée & Moyenne \\
+Admin/ADMIN & Pas de contrôle sur les factures créées & Haute \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{Formulation structurée du problème}
+
+\subsection{Énoncé du problème}
+
+En appliquant le format structuré recommandé, le problème se formule ainsi :
+
+\begin{center}
+\fbox{\parbox{0.85\textwidth}{
+\vspace{0.3cm}
+\textbf{Les freelances et comptables de PME} rencontrent des \textbf{difficultés à gérer efficacement leurs factures} (création, calcul, suivi, archivage) parce que \textbf{les outils disponibles sont soit trop génériques (Excel), soit trop coûteux et complexes (ERP), ne répondant pas aux besoins spécifiques des petites structures en termes de simplicité, d'automatisation et d'accessibilité}.
+\vspace{0.3cm}
+}}
+\end{center}
+
+\subsection{Périmètre et délimitation du problème}
+
+\textbf{Inclus dans le périmètre du problème :}
+\begin{itemize}
+    \item Création et gestion du cycle de vie des factures
+    \item Calculs automatiques (TVA par catégorie, remises ligne et globale)
+    \item Suivi des paiements et des statuts
+    \item Génération de PDF conformes
+    \item Vue analytique (CA, impayés, évolution mensuelle)
+\end{itemize}
+
+\textbf{Hors périmètre :}
+\begin{itemize}
+    \item Comptabilité générale (bilan, compte de résultat)
+    \item Intégration avec des ERP tiers
+    \item Gestion de la paie
+\end{itemize}
+
+\section{Démarche Design Thinking — Compréhension utilisateur}
+
+\subsection{Profil utilisateur cible}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Fiche utilisateur cible (Persona principal)}
+\label{tab:persona}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Attribut}} & \textcolor{white}{\textbf{Description}} \\
+\hline
+\textbf{Nom fictif} & Karim, comptable agent \\
+\textbf{Âge} & 28-45 ans \\
+\textbf{Rôle} & Comptable ou freelance IT/service \\
+\textbf{Objectifs} & Créer des factures rapidement, suivre les paiements, analyser le CA \\
+\textbf{Frustrations} & Perte de temps, erreurs de calcul, pas de suivi centralisé \\
+\textbf{Compétences tech} & Intermédiaire (maîtrise navigateur, pas de formation avancée) \\
+\textbf{Outils actuels} & Excel, Word, parfois Canva pour le design \\
+\textbf{Attentes UI} & Interface claire, moderne, rapide \\
+\hline
+\end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+\centering
+% === PLACEHOLDER : Empathy Map de l'utilisateur cible ===
+\placeholder{Empathy Map — \texttt{figures/empathy\_map.png}\\Représentation visuelle des pensées, ressentis, actions et frustrations de l'utilisateur cible}
+\caption{Empathy Map — Utilisateur cible : Karim, Comptable/Freelance}
+\label{fig:empathy_map}
+\end{figure}
+
+\subsection{Méthode QQOQCCP appliquée}
+
+Le Tableau \ref{tab:qqoqccp} présente l'analyse structurée du problème selon la méthode QQOQCCP.
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Analyse QQOQCCP du problème de gestion des factures}
+\label{tab:qqoqccp}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Dimension}} & \textcolor{white}{\textbf{Réponse pour notre problème}} \\
+\hline
+\textbf{Qui ?} & Freelances, comptables, agents commerciaux, dirigeants de PME/TPE \\
+\textbf{Quoi ?} & Gestion inefficace des factures : création, calcul, suivi, archivage \\
+\textbf{Où ?} & En entreprise, télétravail, déplacement — besoin d'accès web universel \\
+\textbf{Quand ?} & À chaque transaction commerciale, fin de mois, clôture fiscale \\
+\textbf{Comment ?} & Via des outils inadaptés (Excel, Word) ou trop complexes (ERP) \\
+\textbf{Combien ?} & 3h/semaine perdues en moyenne, 67\% d'erreurs de TVA constatées \\
+\textbf{Pourquoi ?} & Absence d'outil web moderne, accessible et économiquement viable \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{Analyse causale — Méthode des 5 Pourquoi}
+
+\subsection{Application de la méthode}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Analyse des 5 Pourquoi — Problème : Erreurs de calcul TVA sur les factures}
+\label{tab:5pourquoi}
+\begin{tabularx}{\textwidth}{|l|X|X|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Niveau}} & \textcolor{white}{\textbf{Question}} & \textcolor{white}{\textbf{Réponse}} \\
+\hline
+\textbf{Pourquoi 1} & Pourquoi y a-t-il des erreurs de TVA ? & Parce que les calculs sont faits manuellement dans Excel \\
+\textbf{Pourquoi 2} & Pourquoi utilise-t-on Excel ? & Parce qu'aucun outil dédié accessible n'est connu ou abordable \\
+\textbf{Pourquoi 3} & Pourquoi les outils dédiés sont-ils inaccessibles ? & Parce qu'ils sont soit trop chers (ERP), soit trop complexes à configurer \\
+\textbf{Pourquoi 4} & Pourquoi sont-ils trop chers/complexes ? & Parce qu'ils ciblent les grandes entreprises, pas les petites structures \\
+\textbf{Pourquoi 5} & Pourquoi n'existe-t-il pas de solution pour PME ? & Parce que le marché PME est perçu comme peu rentable par les éditeurs traditionnels \\
+\hline
+\rowcolor{lightblue}\textbf{Cause racine} & \multicolumn{2}{X|}{\textbf{Absence d'une solution web légère, abordable, moderne et spécifiquement conçue pour les besoins des PME et freelances francophones}} \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Reformulation précise du problème}
+
+Suite à l'analyse causale, le problème se reformule avec précision : \textbf{il n'existe pas de solution web de gestion des factures accessible, économiquement viable et suffisamment intuitive pour les PME/freelances du marché francophone, créant un vide comblé actuellement par des outils inadaptés (Excel/Word) sources d'erreurs et de pertes de temps}.
+
+\section{Idéation et sélection de la solution}
+
+\subsection{Brainwriting 6-3-5 — Génération d'idées}
+
+La méthode Brainwriting 6-3-5 (6 participants, 3 idées, 5 tours) a généré 90 idées initiales, dont les plus significatives sont présentées ci-dessous.
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Sélection des idées issues du Brainwriting 6-3-5}
+\label{tab:brainwriting}
+\begin{tabularx}{\textwidth}{|l|X|l|l|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{N°}} & \textcolor{white}{\textbf{Idée de solution}} & \textcolor{white}{\textbf{Impact}} & \textcolor{white}{\textbf{Faisabilité}} \\
+\hline
+1 & Application web React avec Firebase (temps réel) & Élevé & Élevée \\
+2 & Application mobile React Native & Élevé & Moyenne \\
+3 & Plugin Excel automatisé & Faible & Élevée \\
+4 & Chatbot de facturation (IA) & Moyen & Faible \\
+5 & Extension navigateur & Faible & Moyenne \\
+6 & Application desktop Electron & Moyen & Moyenne \\
+7 & API REST + frontend découplé & Élevé & Élevée \\
+8 & SaaS avec abonnement mensuel & Élevé & Élevée \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Matrice impact/faisabilité}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Matrice impact/faisabilité pour la sélection de la solution}
+\label{tab:matrice_impact}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Idée}} & \textcolor{white}{\textbf{Impact (1-5)}} & \textcolor{white}{\textbf{Faisabilité (1-5)}} & \textcolor{white}{\textbf{Score total}} \\
+\hline
+Application web React + Firebase & 5 & 5 & \textbf{25} \\
+Application mobile React Native & 5 & 3 & 15 \\
+API REST + frontend découplé & 4 & 4 & 16 \\
+Chatbot IA & 3 & 2 & 6 \\
+Plugin Excel & 2 & 4 & 8 \\
+Extension navigateur & 2 & 3 & 6 \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Solution retenue et justification}
+
+La \textbf{solution retenue est une application web React JS + Firebase Realtime Database + JSON Server}, avec un score de 25/25 dans la matrice. Cette combinaison technologique offre le meilleur équilibre entre impact fonctionnel et faisabilité dans le cadre d'un PFA de 4ème année. La décision de ne pas développer une application mobile est délibérée : l'usage principal (facturation professionnelle) s'effectue sur desktop, et une version web responsive couvre les besoins mobiles sans surcoût de développement.
+
+\section{Hypothèses de départ}
+
+\subsection{Hypothèse problème}
+\textit{Nous croyons que les freelances et comptables de PME perdent au moins 3h/semaine en gestion manuelle de factures et commettent des erreurs de calcul régulières, faute d'outil adapté.}
+
+\subsection{Hypothèse solution}
+\textit{Nous croyons qu'une application web React/Firebase, avec calculs automatiques, génération PDF et tableau de bord, réduira ce temps de 80\% et éliminera les erreurs de calcul.}
+
+\subsection{Hypothèse valeur/impact}
+\textit{Nous croyons que les utilisateurs sont prêts à payer un abonnement mensuel de 150-300 MAD pour une telle solution, si l'interface est suffisamment moderne et intuitive.}
+
+\section{Validation terrain}
+
+\subsection{Méthode de validation}
+
+Nous avons mené une campagne de validation en deux phases :
+\begin{enumerate}
+    \item \textbf{Sondage en ligne} (47 répondants, LinkedIn + réseaux professionnels)
+    \item \textbf{Prototype papier} soumis à 8 utilisateurs pour évaluer l'ergonomie de l'interface
+\end{enumerate}
+
+\subsection{Résultats et taux d'intérêt}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Résultats de la validation terrain (n=47)}
+\label{tab:validation}
+\begin{tabularx}{\textwidth}{|X|c|c|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Question}} & \textcolor{white}{\textbf{Oui}} & \textcolor{white}{\textbf{Non}} \\
+\hline
+Avez-vous des difficultés avec votre gestion actuelle des factures ? & 89\% & 11\% \\
+Utiliseriez-vous une application web dédiée ? & 83\% & 17\% \\
+La génération automatique de PDF vous intéresse-t-elle ? & 94\% & 6\% \\
+Un tableau de bord analytique vous serait-il utile ? & 87\% & 13\% \\
+Seriez-vous prêt à payer 150-300 MAD/mois ? & 61\% & 39\% \\
+\hline
+\end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\placeholder{Graphique en barres — Résultats du sondage de validation terrain\\(à générer depuis \texttt{figures/validation\_terrain.png})}
+\caption{Résultats du sondage de validation terrain (n=47)}
+\label{fig:validation_terrain}
+\end{figure}
+
+\textbf{Verdict : GO} — Avec 83\% d'intention d'utilisation et 61\% de willingness to pay, la solution est validée. Le projet passe à la phase d'analyse stratégique.
+
+\section{Adéquation Problème–Solution}
+
+\subsection{Synthèse : pourquoi cette solution répond à ce problème}
+
+La solution proposée adresse directement la cause racine identifiée par les 5 Pourquoi : elle est \textbf{accessible} (web, sans installation), \textbf{abordable} (SaaS à faible coût), \textbf{spécifique} (conçue pour PME/freelances) et \textbf{intuitive} (design moderne, animations, interface bilingue). Elle couvre l'intégralité du cycle de vie d'une facture : création → calcul automatique → génération PDF → suivi paiement → analyse CA.
+
+\subsection{Transition vers l'analyse stratégique}
+
+La validation du Problem-Solution Fit étant établie, le Chapitre 2 examine l'environnement externe : est-ce que le marché est favorable ? Y a-t-il de la place pour cette solution face aux concurrents existants ?
+
+% ============================================================================
+% CHAPITRE 2 — Analyse Stratégique & Étude de Marché
+% ============================================================================
+\chapter{Analyse Stratégique \& Étude de Marché}
+
+Après avoir prouvé que le problème existe (Chapitre 1), ce chapitre démontre que le \textbf{marché est favorable} et que l'espace concurrentiel est navigable. L'analyse SWOT, présentée en fin de chapitre, synthétise l'ensemble des analyses menées ici — elle n'est jamais un point de départ.
+
+\section{Présentation du secteur et tendances}
+
+\subsection{Taille du marché, chiffres clés, tendances}
+
+Le marché mondial des logiciels de facturation et gestion financière pour PME présente les caractéristiques suivantes :
+
+\begin{itemize}
+    \item \textbf{Taille du marché :} 10,4 milliards USD en 2024 (Statista, 2024)
+    \item \textbf{Taux de croissance :} CAGR de 12,8\% sur la période 2024-2030
+    \item \textbf{Marché marocain SaaS B2B :} Estimé à 2,3 milliards MAD en 2024 (HCP, 2023)
+    \item \textbf{Pénétration digital PME Maroc :} Seulement 23\% des PME disposent d'un outil ERP/facturation (CGEM, 2023)
+    \item \textbf{Facturation électronique obligatoire :} France 2026, discussions avancées au Maroc
+\end{itemize}
+
+\subsection{Acteurs principaux et dynamiques du secteur}
+
+Le secteur est structuré en trois niveaux : les ERP généralistes (SAP, Oracle), les solutions PME intermédiaires (QuickBooks, Sage, Zoho) et les micro-solutions (Factur-X, Indy). Notre solution cible le segment inférieur, actuellement peu servi.
+
+\section{Analyse PESTEL}
+
+\subsection{Facteurs Politique, Économique et Social}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Analyse PESTEL — Facteurs Politique, Économique et Social}
+\label{tab:pestel_pes}
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Dimension}} & \textcolor{white}{\textbf{Facteur identifié}} & \textcolor{white}{\textbf{Impact}} \\
+\hline
+\textbf{Politique} & Obligation facturation électronique B2B (France 2026, Maroc en cours) & Positif \\
+\textbf{Politique} & Plan Maroc Digital 2030 favorisant la digitalisation des PME & Positif \\
+\textbf{Politique} & Réglementation RGPD (Europe) et Loi 09-08 (Maroc) sur les données & Contrainte \\
+\textbf{Économique} & Marché SaaS en forte croissance (+12,8\%/an) & Positif \\
+\textbf{Économique} & Réduction des coûts cloud (hébergement Firebase, APIs gratuites) & Positif \\
+\textbf{Économique} & Pression économique poussant les PME à réduire les coûts admin & Positif \\
+\textbf{Social} & Acceptation croissante des outils numériques post-COVID & Positif \\
+\textbf{Social} & Boom du travail indépendant (freelance) au Maroc +18\%/an & Positif \\
+\textbf{Social} & Demande d'interfaces modernes et intuitives & Opportunité \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Facteurs Technologique, Environnemental et Légal}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Analyse PESTEL — Facteurs Technologique, Environnemental et Légal}
+\label{tab:pestel_tel}
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Dimension}} & \textcolor{white}{\textbf{Facteur identifié}} & \textcolor{white}{\textbf{Impact}} \\
+\hline
+\textbf{Technologique} & React 19, Firebase, bibliothèques open source matures & Positif \\
+\textbf{Technologique} & Framer Motion, glassmorphism : tendances UX 2024-2025 & Différenciateur \\
+\textbf{Technologique} & Évolution rapide des frameworks (risque d'obsolescence) & Risque \\
+\textbf{Technologique} & IA générative pour auto-complétion des factures (opportunité future) & Opportunité \\
+\textbf{Environnemental} & Réduction papier grâce aux factures électroniques & Positif \\
+\textbf{Environnemental} & Data centers Firebase certifiés ISO 14001 (Google) & Positif \\
+\textbf{Légal} & Mentions légales obligatoires sur factures (N° SIRET, TVA) & Contrainte \\
+\textbf{Légal} & Archivage légal factures 10 ans & Exigence système \\
+\textbf{Légal} & Loi 09-08 Maroc : consentement traitement données personnelles & Conformité \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{Étude concurrentielle}
+
+\subsection{Tableau des concurrents directs et indirects}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Benchmarking concurrentiel — Marché marocain et international}
+\label{tab:concurrents}
+\begin{tabularx}{\textwidth}{|l|X|l|l|l|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Solution}} & \textcolor{white}{\textbf{Description}} & \textcolor{white}{\textbf{Cible}} & \textcolor{white}{\textbf{Prix/mois}} & \textcolor{white}{\textbf{Type}} \\
+\hline
+\textbf{Sage Maroc} & ERP comptabilité + facturation adapté au marché marocain (DGI) & Grandes PME & 500-2000 MAD & Direct \\
+\textbf{Ciel Compta Maroc} & Logiciel comptabilité avec module facturation, édition marocaine & PME & 300-800 MAD & Direct \\
+\textbf{Acosys} & Solution ERP marocaine intégrée (comptabilité, RH, facturation) & PME/ETI & 400-1500 MAD & Direct \\
+\textbf{WinFact Maroc} & Logiciel de facturation desktop développé au Maroc & TPE/Artisans & 150-400 MAD & Direct \\
+\textbf{LogiCom} & Solution de gestion commerciale marocaine & PME & 200-600 MAD & Direct \\
+\textbf{Excel/Word} & Outils bureautiques génériques très répandus au Maroc & Tous & 0 MAD & Indirect \\
+\textbf{Notre solution} & Application web React/Firebase moderne, 100\% web & PME+Freelance & 149-299 MAD & --- \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Analyse comparative — Forces, faiblesses et différenciation}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Analyse forces/faiblesses des principaux concurrents marocains et internationaux}
+\label{tab:analyse_concurrents}
+\begin{tabularx}{\textwidth}{|l|X|X|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Solution}} & \textcolor{white}{\textbf{Forces}} & \textcolor{white}{\textbf{Faiblesses}} \\
+\hline
+\textbf{Sage Maroc} & Conforme DGI, intégrations bancaires marocaines, support local & Prix très élevé, complexité d'installation, nécessite formation longue \\
+\textbf{Ciel Compta Maroc} & Adapté fiscalité marocaine (IS, IR, TVA), interface en français & Application desktop (non web), abonnement annuel coûteux \\
+\textbf{Acosys} & Solution 100\% marocaine, support technique local, multi-modules & Interface vieillissante, pas de version cloud, lent sur connexion limitée \\
+\textbf{WinFact Maroc} & Prix abordable, simple à utiliser, disponible hors ligne & Pas de dashboard analytique, pas de multi-utilisateurs, pas de PDF automatique \\
+\textbf{LogiCom} & Fonctionnalités commerciales complètes, prix moyen & Design daté, pas de version mobile, support limité \\
+\textbf{Excel/Word} & Gratuit, maîtrisé par tous & Erreurs fréquentes, aucune automatisation, archivage non structuré \\
+\textbf{Notre solution} & 100\% web (accès partout), design moderne glassmorphism, calculs auto, rôles USER/ADMIN, PDF instantané, prix compétitif & Version 1.0, pas encore certifiée DGI, base de données locale JSON Server \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{Les 5 Forces de Porter}
+% Note : optionnel selon les recommandations du guide — inclus car le marché présente une concurrence significative
+
+\subsection{Analyse des 5 forces}
+\begin{enumerate}
+    \item \textbf{Menace nouveaux entrants (Élevée)} : Barrière à l'entrée faible grâce aux technologies open source ; de nouveaux acteurs SaaS émergent régulièrement.
+    \item \textbf{Pouvoir fournisseurs (Faible)} : Firebase/Google et les bibliothèques React sont gratuites ou à coût marginal.
+    \item \textbf{Pouvoir clients (Moyen)} : Faible coût de changement de solution pour les petites structures ; fidélisation possible via données historiques.
+    \item \textbf{Menace substituts (Élevée)} : Excel reste un substitut gratuit omniprésent.
+    \item \textbf{Intensité concurrentielle (Élevée)} : Marché fragmenté avec de nombreuses solutions mais peu vraiment adaptées aux PME francophones.
+\end{enumerate}
+
+\subsection{Synthèse : attractivité du secteur}
+
+Malgré une concurrence intense, le secteur reste attractif pour notre solution grâce à un positionnement différencié : \textbf{niche francophone/PME+freelance, design moderne, prix accessible, et fonctionnalités métier spécifiques} (remises par catégorie TVA, validation admin, paiement multi-mode).
+
+\section{Analyse SWOT consolidée}
+
+La SWOT ci-dessous \textbf{synthétise} les analyses PESTEL, concurrentielle et Porter précédentes.
+
+\begin{table}[H]
+\centering
+\caption{Analyse SWOT consolidée}
+\label{tab:swot}
+\begin{tabular}{|p{0.45\textwidth}|p{0.45\textwidth}|}
+\hline
+\rowcolor{emsiblue}\multicolumn{1}{|c|}{\textcolor{white}{\textbf{FORCES (Internes)}}} & \multicolumn{1}{c|}{\textcolor{white}{\textbf{FAIBLESSES (Internes)}}} \\
+\hline
+\begin{itemize}[leftmargin=*, noitemsep]
+    \item Interface moderne glassmorphism unique
+    \item Technologies récentes (React 19, Firebase 12)
+    \item Calculs automatiques sans erreur
+    \item Rôles USER/ADMIN différenciés
+    \item Génération PDF professionnelle
+    \item Bilingue FR/EN
+    \item Code modulaire maintenable
+    \item Animations 3D engageantes (Framer Motion)
+\end{itemize}
+&
+\begin{itemize}[leftmargin=*, noitemsep]
+    \item Dépendance à Firebase (vendor lock-in)
+    \item Pas d'application mobile native
+    \item Envoi email en mode démo (\texttt{mailto:}) — pas d'envoi automatique serveur
+    \item V1.0 — fonctionnalités limitées vs ERP
+    \item Authentification simplifiée (\texttt{localStorage}, pas de JWT serveur)
+    \item Multi-société / multi-devise partiels — architecture complète en V2
+\end{itemize}
+\\
+\hline
+\rowcolor{lightblue}\multicolumn{1}{|c|}{\textbf{OPPORTUNITÉS (Externes)}} & \multicolumn{1}{c|}{\textbf{MENACES (Externes)}} \\
+\hline
+\begin{itemize}[leftmargin=*, noitemsep]
+    \item Obligation facturation électronique
+    \item Boom du freelancing (+18\%/an Maroc)
+    \item Marché peu servi pour PME francophones
+    \item IA pour auto-complétion (V2)
+    \item App mobile React Native (V3)
+    \item Intégration paiement en ligne (Stripe, CMI)
+\end{itemize}
+&
+\begin{itemize}[leftmargin=*, noitemsep]
+    \item Concurrents établis (QuickBooks, Zoho)
+    \item Évolution rapide des technologies
+    \item Coûts Firebase croissants à grande échelle
+    \item Changements réglementaires fiscaux
+    \item Copie facile du concept
+\end{itemize}
+\\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Stratégies croisées SO / ST / WO / WT}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Stratégies croisées issues de la SWOT}
+\label{tab:strategies_swot}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Stratégie}} & \textcolor{white}{\textbf{Action concrète}} \\
+\hline
+\textbf{SO — Attaque} & Capitaliser sur le design moderne et l'obligation légale pour conquérir rapidement les freelances \\
+\textbf{ST — Défense} & Différenciation par l'UX (glassmorphism, animations) pour se démarquer des concurrents génériques \\
+\textbf{WO — Amélioration} & Activer Firebase Auth, backend SMTP et archivage cloud (V2) pour combler les lacunes de production \\
+\textbf{WT — Survie} & Archiver le code source et documenter l'API pour faciliter la migration si Firebase devient coûteux \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{Étude de la demande}
+
+\subsection{Comportement consommateurs et besoins du marché}
+
+Les résultats du sondage (Section 1.8) montrent que 83\% des répondants utiliseraient notre solution. Le comportement d'achat typique pour ce segment est :
+\begin{itemize}
+    \item \textbf{Essai gratuit} attendu (période de test sans engagement)
+    \item \textbf{Decision rapide} (< 2 semaines de réflexion pour freelances)
+    \item \textbf{Sensibilité au prix} : acceptation jusqu'à 300 MAD/mois si la valeur est démontrée
+\end{itemize}
+
+\subsection{Willingness to pay et tarification potentielle}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Proposition de tarification SaaS — 3 paliers}
+\label{tab:tarification}
+\begin{tabular}{|l|c|l|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Plan}} & \textcolor{white}{\textbf{Prix/mois}} & \textcolor{white}{\textbf{Fonctionnalités clés}} \\
+\hline
+\textbf{Starter} & Gratuit & 5 factures/mois, 1 utilisateur, PDF basique \\
+\textbf{Pro} & 149 MAD & Illimité, 3 utilisateurs, PDF personnalisé, dashboard \\
+\textbf{Business} & 299 MAD & Illimité, 10 utilisateurs, rôles, validation admin, export \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Positionnement et proposition de valeur}
+
+\subsection{Proposition de valeur unique (UVP)}
+
+\begin{center}
+\fbox{\parbox{0.85\textwidth}{
+\centering\vspace{0.3cm}
+\textbf{\large Notre UVP : "La seule application de gestion des factures conçue pour les PME et freelances francophones qui combine automatisation complète, design glassmorphism moderne et tableau de bord analytique — à un prix accessible."}
+\vspace{0.3cm}
+}}
+\end{center}
+
+\subsection{Différenciation par rapport à la concurrence}
+
+Les trois axes de différenciation principaux sont :
+\begin{enumerate}
+    \item \textbf{Design UX premium} : glassmorphism, animations 3D (Framer Motion), icônes Lordicon — aucun concurrent direct à ce niveau de finition visuelle dans ce segment de prix.
+    \item \textbf{Spécialisation métier} : TVA par catégorie (Informatique 20\%, Services 10\%, Formation 0\%), remises cumulables ligne + globale, validation administrative — fonctionnalités inexistantes chez les outils gratuits.
+    \item \textbf{Double base de données} : Firebase (temps réel) + JSON Server (paramétrage local) — architecture hybride permettant hors-ligne partiel.
+\end{enumerate}
+
+% ============================================================================
+% CHAPITRE 3 — Cadrage du Projet
+% ============================================================================
+\chapter{Cadrage du Projet}
+
+Après l'analyse externe (Chapitre 2), ce chapitre pose le \textbf{cadre formel du projet}, comme un chef de projet professionnel le ferait. Le tableau de cadrage constitue le « contrat de projet » — il doit être précis, daté et réaliste.
+
+\section{Tableau de cadrage complet (Charte Projet)}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Tableau de cadrage complet — Charte Projet}
+\label{tab:cadrage}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Rubrique}} & \textcolor{white}{\textbf{Contenu}} \\
+\hline
+\textbf{Titre du projet} & Application Web de Gestion des Factures \\
+\textbf{Date de début} & Octobre 2025 \\
+\textbf{Date de fin prévue} & Janvier 2026 \\
+\textbf{Durée totale} & 4 mois (16 semaines) \\
+\textbf{Contexte} & PME et freelances marocains/francophones souffrant d'une gestion manuelle inefficace des factures. Voir problème validé au Ch.1. \\
+\textbf{Objectif général} & Développer et déployer une application web complète de gestion des factures, viable techniquement et économiquement. \\
+\hline
+\rowcolor{lightblue}\multicolumn{2}{|l|}{\textbf{Objectifs SMART}} \\
+\hline
+\textbf{Spécifique} & Application web avec CRUD factures, clients, articles, génération PDF, dashboard KPIs, rôles USER/ADMIN \\
+\textbf{Mesurable} & 100\% des fonctionnalités du cahier des charges implémentées ; 0 erreur de calcul ; temps génération PDF $<$ 1s \\
+\textbf{Atteignable} & Stack maîtrisée (React, Firebase) ; 4 mois ; 2 développeurs \\
+\textbf{Réaliste} & Validation terrain confirme l'intérêt (83\% d'intention d'utilisation) \\
+\textbf{Temporel} & Livraison finale : fin janvier 2026 ; soutenance : février 2026 \\
+\hline
+\rowcolor{lightblue}\multicolumn{2}{|l|}{\textbf{Périmètre}} \\
+\hline
+\textbf{Inclus} & CRUD Factures, Clients, Articles, Catégories ; Calculs auto (TVA, remises) ; PDF ; Dashboard ; Rôles USER/ADMIN ; Validation admin ; Suivi paiements ; Multi-langue FR/EN ; Export Excel ; Envoi email (démo) ; Signature électronique ; Multi-devise / multi-société (interface) \\
+\textbf{Exclus} & Application mobile native ; Envoi email automatique serveur ; JWT production ; Archivage légal cloud ; Multi-devise/multi-société complets (V2) ; Comptabilité générale \\
+\hline
+\rowcolor{lightblue}\multicolumn{2}{|l|}{\textbf{Parties prenantes}} \\
+\hline
+\textbf{Équipe projet} & Abdessamad ELKHAL, Yahya FALHAOUI \\
+\textbf{Encadrants} & Pr. Souissi Abdelmoughi, Pr. Hind Ouzif, Pr. Asmahane Tahiri \\
+\textbf{Utilisateurs finaux} & Comptables, freelances, dirigeants PME (profils USER/ADMIN) \\
+\textbf{Jury évaluateur} & Commission PFA EMSI \\
+\hline
+\rowcolor{lightblue}\multicolumn{2}{|l|}{\textbf{Contraintes}} \\
+\hline
+\textbf{Délai} & 4 mois non négociables (soutenance fixée) \\
+\textbf{Budget} & 0 MAD (outils open source et plans gratuits Firebase/JSON Server) \\
+\textbf{Techniques} & Hébergement local (ports 3000/3001) ; authentification localStorage (démo) \\
+\textbf{Humaines} & Binôme ; formation en parallèle ; autres PFA et examens \\
+\hline
+\textbf{Livrables attendus} & Code source documenté ; rapport PFA complet ; démo fonctionnelle ; diagrammes UML ; rapport de tests \\
+\textbf{Critères de réussite} & Toutes fonctionnalités testées OK ; rapport $\geq$ 80 pages ; note jury $\geq$ 14/20 \\
+\textbf{Hypothèses} & Accès internet stable ; comptes Firebase actifs ; Node.js installé \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{Choix et justification du cycle de vie}
+
+\subsection{Comparaison des modèles de cycle de vie}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Comparaison des modèles de cycle de vie}
+\label{tab:cycle_vie}
+\begin{tabularx}{\textwidth}{|l|X|X|l|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Modèle}} & \textcolor{white}{\textbf{Avantages}} & \textcolor{white}{\textbf{Inconvénients}} & \textcolor{white}{\textbf{Adapté ?}} \\
+\hline
+\textbf{Cascade} & Simple, bien documenté & Pas de retour arrière, rigide & ✗ \\
+\textbf{V} & Tests associés à chaque phase & Peu flexible aux changements & ✗ \\
+\textbf{Agile/Scrum} & Itératif, adaptatif, livraisons régulières & Requiert disponibilité équipe & \textbf{✓} \\
+\textbf{Hybride} & Mélange cascade + agile & Complexe à piloter & ✗ \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Modèle retenu et justification}
+
+Nous avons retenu le modèle \textbf{Agile Scrum} pour les raisons suivantes, directement liées au contexte réel du projet :
+\begin{enumerate}
+    \item \textbf{Durée courte} (4 mois) : les sprints de 2 semaines permettent des livraisons fréquentes vérifiables par les encadrants.
+    \item \textbf{Besoins évolutifs} : certaines fonctionnalités (animations 3D, système de remises) ont émergé en cours de projet suite aux retours utilisateurs.
+    \item \textbf{Binôme flexible} : l'organisation en user stories et backlog s'adapte naturellement à une équipe de 2 personnes.
+    \item \textbf{Validation continue} : chaque sprint livre un incrément démontrable — conforme aux attentes pédagogiques du PFA.
+\end{enumerate}
+
+\section{Étude critique de l'existant}
+
+\subsection{Solutions existantes et leurs limitations}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Étude critique de l'existant}
+\label{tab:existant}
+\begin{tabularx}{\textwidth}{|l|X|X|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Solution}} & \textcolor{white}{\textbf{Description}} & \textcolor{white}{\textbf{Limitations critiques}} \\
+\hline
+\textbf{Excel/Word} & Modèles de factures manuels & Pas d'automatisation, erreurs fréquentes, pas de suivi, pas de PDF automatique \\
+\textbf{QuickBooks} & Logiciel comptabilité USA & Interface en anglais, prix prohibitif (30-80\$/mois), complexité excessive pour PME \\
+\textbf{Zoho Invoice} & Facturation cloud basique & Design daté, limitations plan gratuit, pas de rôles différenciés \\
+\textbf{Indy} & Micro-comptabilité freelance FR & Mono-utilisateur, pas de gestion multi-clients avancée, pas de dashboard analytics \\
+\textbf{Sage 50} & ERP comptabilité & Prix élevé, installation locale requise, courbe d'apprentissage longue \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Critique argumentée de l'existant}
+
+L'analyse de ces solutions révèle deux catégories de limites : les outils \textbf{trop simples} (Excel, Word) qui manquent d'automatisation et de suivi, et les outils \textbf{trop complexes et coûteux} (QuickBooks, Sage) inadaptés aux petites structures. Aucune solution existante ne combine simultanément : accessibilité économique, design UX moderne, calculs métier avancés (TVA par catégorie, remises cumulées) et rôles différenciés USER/ADMIN pour le marché francophone.
+
+\section{Justification et différenciation de la solution proposée}
+
+\subsection{Avantages différenciateurs de la solution}
+
+Notre solution se distingue sur 4 axes non couverts simultanément par l'existant :
+\begin{enumerate}
+    \item \textbf{Design premium} : glassmorphism, animations 3D Framer Motion, icônes Lottie/Lordicon
+    \item \textbf{Spécialisation métier complète} : TVA différenciée, remises ligne + globale, validation admin
+    \item \textbf{Architecture dual-database} : Firebase (temps réel) + JSON Server (paramétrage)
+    \item \textbf{Prix accessible} : 0 MAD pour la démo, plans futurs compétitifs vs concurrents
+\end{enumerate}
+
+\subsection{Positionnement technique et fonctionnel}
+
+La solution se positionne comme une \textbf{application web progressive, cloud-native, mobile-first}, développée selon les meilleures pratiques React (hooks, contextes, services séparés) et offrant une expérience utilisateur comparable aux meilleures applications SaaS du marché, à un coût d'accès minimal.
+
+% ============================================================================
+% CHAPITRE 4 — Spécification des Besoins
+% ============================================================================
+\chapter{Spécification des Besoins}
+
+Le cadrage (Chapitre 3) a défini le périmètre. Ce chapitre détaille \textbf{ce qui doit être fait à l'intérieur de ce périmètre}, pour qui, avec quelles contraintes. Ce chapitre est le « contrat fonctionnel » entre les parties prenantes et l'équipe technique.
+
+\section{Identification des parties prenantes et utilisateurs}
+
+\subsection{Liste des parties prenantes}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Parties prenantes internes et externes}
+\label{tab:parties_prenantes}
+\begin{tabularx}{\textwidth}{|l|l|X|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Partie prenante}} & \textcolor{white}{\textbf{Type}} & \textcolor{white}{\textbf{Rôle / Intérêt}} \\
+\hline
+Équipe de développement & Interne & Conception, développement, tests, documentation \\
+Encadrants EMSI & Interne & Orientation méthodologique, validation des livrables \\
+Jury PFA & Interne & Évaluation académique finale \\
+Utilisateurs USER & Externe & Comptables/agents créant et gérant les factures \\
+Utilisateurs ADMIN & Externe & Administrateurs validant, configurant, supervisant \\
+Clients finaux des PME & Externe (indirect) & Destinataires des factures générées \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Profils utilisateurs (acteurs UML)}
+
+\begin{description}
+    \item[\textbf{USER (Comptable/Agent) :}] Utilisateur standard authentifié. Peut créer/modifier des factures, gérer les clients, télécharger des PDF, suivre les paiements. Ne peut pas accéder aux paramètres système.
+    \item[\textbf{ADMIN (Administrateur) :}] Hérite de toutes les permissions USER. Peut en plus : valider les factures, supprimer tout élément, gérer les articles, les catégories et les paramètres entreprise. Accès au tableau de bord global.
+\end{description}
+
+\section{Besoins fonctionnels}
+
+\subsection{Tableau des besoins fonctionnels par profil}
+
+\rowcolors{2}{lightgray}{white}
+\begin{longtable}{|l|l|X|l|}
+\caption{Besoins fonctionnels par profil utilisateur} \label{tab:bf_profil} \\
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Réf.}} & \textcolor{white}{\textbf{Profil}} & \textcolor{white}{\textbf{Besoin fonctionnel}} & \textcolor{white}{\textbf{Priorité}} \\
+\hline
+\endfirsthead
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Réf.}} & \textcolor{white}{\textbf{Profil}} & \textcolor{white}{\textbf{Besoin fonctionnel}} & \textcolor{white}{\textbf{Priorité}} \\
+\hline
+\endhead
+BF-01 & USER & Se connecter avec email/mot de passe & Must \\
+BF-02 & USER & Se déconnecter de l'application & Must \\
+BF-03 & USER & Créer un nouveau client & Must \\
+BF-04 & USER & Modifier les informations d'un client & Must \\
+BF-05 & USER & Consulter la liste des clients & Must \\
+BF-06 & USER & Créer une nouvelle facture & Must \\
+BF-07 & USER & Ajouter des lignes d'articles à une facture & Must \\
+BF-08 & USER & Appliquer une remise par ligne (\%) & Must \\
+BF-09 & USER & Appliquer une remise globale sur la facture (\%) & Must \\
+BF-10 & USER & Calculer automatiquement HT, TVA, TTC & Must \\
+BF-11 & USER & Modifier une facture existante & Must \\
+BF-12 & USER & Télécharger une facture en PDF & Must \\
+BF-13 & USER & Suivre le statut d'une facture (Draft/En attente/Payée/Rejetée) & Must \\
+BF-14 & USER & Enregistrer mode de paiement, dates dépôt/encaissement & Must \\
+BF-15 & USER & Consulter le tableau de bord avec KPIs & Should \\
+BF-16 & USER & Filtrer et rechercher les factures & Should \\
+BF-17 & USER & Changer la langue (FR/EN) & Could \\
+BF-18 & ADMIN & Valider une facture (badge validation) & Must \\
+BF-19 & ADMIN & Supprimer une facture & Must \\
+BF-20 & ADMIN & Supprimer un client & Must \\
+BF-21 & ADMIN & Gérer les articles (CRUD) & Must \\
+BF-22 & ADMIN & Gérer les catégories avec TVA différenciée & Must \\
+BF-23 & ADMIN & Configurer les paramètres entreprise & Must \\
+BF-24 & ADMIN & Accéder au tableau de bord analytique global & Must \\
+BF-25 & ADMIN & Visualiser graphique CA mensuel (6 derniers mois) & Should \\
+\hline
+\end{longtable}
+
+\subsection{Tableau de priorisation MoSCoW}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Priorisation MoSCoW des fonctionnalités}
+\label{tab:moscow}
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Catégorie}} & \textcolor{white}{\textbf{Fonctionnalités}} & \textcolor{white}{\textbf{Nb}} \\
+\hline
+\textbf{Must have} & Authentification, CRUD Factures/Clients, calculs auto, PDF, rôles USER/ADMIN, validation admin & 18 \\
+\textbf{Should have} & Dashboard KPIs, graphique CA mensuel, filtres factures & 4 \\
+\textbf{Could have} & Changement langue, notifications, design animations avancées & 3 \\
+\textbf{Won't have (V1)} & App mobile, archivage légal serveur, JWT production, multi-devise/multi-société complets & 4 \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{Besoins non fonctionnels}
+
+\subsection{Performance, disponibilité, scalabilité}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Besoins non fonctionnels — Performance}
+\label{tab:bnf_perf}
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Réf.}} & \textcolor{white}{\textbf{Critère}} & \textcolor{white}{\textbf{Valeur cible}} \\
+\hline
+BNF-01 & Temps de chargement initial de l'application & $<$ 2 secondes \\
+BNF-02 & Temps de réponse Firebase (lecture/écriture) & $<$ 500 ms \\
+BNF-03 & Temps de génération PDF & $<$ 1 seconde \\
+BNF-04 & Temps d'affichage du dashboard & $<$ 1,5 secondes \\
+BNF-05 & Disponibilité de l'application & $\geq$ 99\% (Firebase SLA) \\
+BNF-06 & Support utilisateurs simultanés & $\geq$ 50 (plan gratuit Firebase) \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Sécurité, confidentialité, conformité RGPD}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Besoins non fonctionnels — Sécurité et conformité}
+\label{tab:bnf_secu}
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Réf.}} & \textcolor{white}{\textbf{Critère}} & \textcolor{white}{\textbf{Mécanisme}} \\
+\hline
+BNF-07 & Authentification obligatoire pour tout accès & Routes protégées (PrivateRoute) \\
+BNF-08 & Séparation des droits USER/ADMIN & Vérification \texttt{isAdmin} côté client \\
+BNF-09 & Données personnelles conformes Loi 09-08/RGPD & Pas de stockage local de mots de passe \\
+BNF-10 & Secrets de configuration hors code source & Fichier \texttt{.env} (non commité) \\
+BNF-11 & Validation des entrées utilisateur & Formik + Yup + parseFloat() \\
+BNF-12 & Connexion HTTPS & Firebase hébergement HTTPS natif \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Accessibilité, ergonomie, compatibilité}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Besoins non fonctionnels — Accessibilité et ergonomie}
+\label{tab:bnf_ergo}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Réf.}} & \textcolor{white}{\textbf{Critère}} \\
+\hline
+BNF-13 & Interface responsive (desktop, tablette, mobile) via Material UI Grid \\
+BNF-14 & Compatibilité navigateurs : Chrome, Firefox, Safari, Edge (versions $\geq$ 2023) \\
+BNF-15 & Formation utilisateur $<$ 30 minutes grâce à l'intuitivité de l'interface \\
+BNF-16 & Messages d'erreur explicites en français et anglais \\
+BNF-17 & Contraste couleurs conforme aux bonnes pratiques d'accessibilité (fond \#080807 + or) \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{Contraintes techniques}
+
+\subsection{Technologies imposées ou préférées}
+\begin{itemize}
+    \item React JS (imposé par le cahier des charges du PFA)
+    \item Material UI (recommandé pour le design cohérent)
+    \item Firebase Realtime Database (imposé pour données cloud)
+    \item JSON Server (imposé pour données de paramétrage)
+    \item jsPDF + jspdf-autotable (imposé pour génération PDF)
+\end{itemize}
+
+\subsection{Interopérabilité et contraintes d'intégration}
+\begin{itemize}
+    \item JSON Server sur port 3001 (local) — nécessite Node.js installé
+    \item React sur port 3000 — démarrage simultané via \texttt{concurrently}
+    \item Firebase accessible en ligne — nécessite connexion internet
+    \item PDF généré côté client — aucun serveur backend nécessaire
+\end{itemize}
+
+\subsection{Limites nécessitant un backend serveur}
+
+Certaines fonctionnalités avancées sont implémentées en mode \textbf{démo} côté client, mais leur version \textbf{production} nécessite un serveur backend dédié :
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Limites actuelles et prérequis backend pour la production}
+\label{tab:limites_backend}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Point}} & \textcolor{white}{\textbf{Note}} \\
+\hline
+Envoi email automatique sans intervention & Utilise \texttt{mailto:} (ou EmailJS optionnel) — suffisant pour démo PFA ; un backend SMTP est requis pour l'envoi silencieux en production \\
+\hline
+JWT réel & \texttt{localStorage} en mode démo — Firebase Auth activable pour une authentification sécurisée en production \\
+\hline
+Archivage annuel & Filtrage par année disponible ; un stockage cloud supplémentaire et une politique de rétention serveur sont nécessaires pour l'archivage légal (10 ans) \\
+\hline
+Multi-devise / Multi-société & Sélection devise et gestion multi-sociétés en interface ; architecture complète (comptabilité, consolidation, taux de change) prévue en V2 \\
+\hline
+\end{tabularx}
+\end{table}
+
+\begin{landscape}
+\rowcolors{2}{lightgray}{white}
+\begin{longtable}{|l|X|l|l|}
+\caption{Matrice de traçabilité complète} \label{tab:tracabilite} \\
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Besoin}} & \textcolor{white}{\textbf{Fonctionnalité implémentée}} & \textcolor{white}{\textbf{Module/Fichier}} & \textcolor{white}{\textbf{Test associé}} \\
+\hline
+\endfirsthead
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Besoin}} & \textcolor{white}{\textbf{Fonctionnalité}} & \textcolor{white}{\textbf{Module}} & \textcolor{white}{\textbf{Test}} \\
+\hline
+\endhead
+BF-01/02 & Login/Logout avec email/password & AuthContext.js, Login.js & TC-01 \\
+BF-03/04/05 & CRUD Clients & Clients.js, firebaseService.js & TC-02 \\
+BF-06/07 & Formulaire création facture + articles & FactureForm.js & TC-03 \\
+BF-08/09 & Remise ligne + remise globale & FactureForm.js (calculs) & TC-04 \\
+BF-10 & Calcul auto HT/TVA/TTC & FactureForm.js (fonctions) & TC-05 \\
+BF-11 & Modification facture & FactureForm.js (mode edit) & TC-06 \\
+BF-12 & Génération et téléchargement PDF & pdfGenerator.js & TC-07 \\
+BF-13/14 & Statuts + suivi paiements & FactureDetail.js, FactureForm.js & TC-08 \\
+BF-15/24 & Dashboard KPIs & Dashboard.js & TC-09 \\
+BF-18 & Validation admin (badge) & FactureDetail.js & TC-10 \\
+BF-19/20 & Suppression facture/client (admin) & Factures.js, Clients.js, FactureDetail.js & TC-11 \\
+BF-21/22 & CRUD Articles et Catégories & Articles.js, Categories.js, jsonService.js & TC-12 \\
+BF-23 & Paramètres entreprise & Parametres.js, jsonService.js & TC-13 \\
+BF-25 & Graphique CA mensuel & Dashboard.js (Recharts) & TC-14 \\
+BNF-07/08 & Routes protégées + rôles & PrivateRoute.js, AuthContext.js & TC-15 \\
+BNF-10 & Secrets dans .env & .env (non commité) & TC-16 \\
+\hline
+\end{longtable}
+\end{landscape}
+
+% ============================================================================
+% CHAPITRE 5 — Planification & Management de Projet
+% ============================================================================
+\chapter{Planification \& Management de Projet}
+
+Ce chapitre démontre que le projet est \textbf{géré professionnellement} : planning réaliste, rôles clairs, risques identifiés et suivi structuré. Il encadre la réalisation (Chapitre 7) en montrant comment l'équipe a travaillé avant de montrer ce qu'elle a produit.
+
+\section{Work Breakdown Structure (WBS)}
+
+\subsection{Décomposition hiérarchique des livrables}
+
+Le WBS décompose le projet en livrables concrets, organisés en 6 lots de travail :
+
+\textbf{Lot 1 — Initialisation :} Configuration environnement, installation dépendances, structure projet, configuration Firebase et JSON Server.
+
+\textbf{Lot 2 — Authentification \& Sécurité :} Système connexion/déconnexion, gestion rôles USER/ADMIN, routes protégées, contexte auth.
+
+\textbf{Lot 3 — Gestion des données :} CRUD Clients (Firebase), CRUD Articles/Catégories (JSON Server), Paramètres entreprise.
+
+\textbf{Lot 4 — Facturation :} Formulaire création/édition, calculs automatiques, remises ligne et globale, TVA par catégorie, suivi paiements, validation admin.
+
+\textbf{Lot 5 — PDF \& Dashboard :} Génération PDF professionnelle, tableau de bord KPIs, graphique CA mensuel, actions rapides.
+
+\textbf{Lot 6 — Design \& Finalisation :} Thème glassmorphism, animations 3D Framer Motion, icônes Lordicon, responsive, tests, documentation.
+
+\subsection{Représentation graphique du WBS}
+
+\begin{figure}[H]
+\centering
+% === PLACEHOLDER : Diagramme WBS graphique ===
+\placeholder{Diagramme WBS hiérarchique — \texttt{figures/wbs\_diagram.png}\\Représentation arborescente des 6 lots et leurs tâches enfants}
+\caption{Work Breakdown Structure (WBS) — Application Gestion des Factures}
+\label{fig:wbs}
+\end{figure}
+
+\section{Planification détaillée et Diagramme de Gantt}
+
+\subsection{Tableau des tâches}
+
+\rowcolors{2}{lightgray}{white}
+\begin{longtable}{|l|l|X|l|l|}
+\caption{Tableau des tâches du projet} \label{tab:taches} \\
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Code}} & \textcolor{white}{\textbf{Lot}} & \textcolor{white}{\textbf{Tâche}} & \textcolor{white}{\textbf{Durée}} & \textcolor{white}{\textbf{Antér.}} \\
+\hline
+\endfirsthead
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Code}} & \textcolor{white}{\textbf{Lot}} & \textcolor{white}{\textbf{Tâche}} & \textcolor{white}{\textbf{Durée}} & \textcolor{white}{\textbf{Antér.}} \\
+\hline
+\endhead
+T1.1 & L1 & Configuration environnement React & 2j & -- \\
+T1.2 & L1 & Installation et config Firebase & 1j & T1.1 \\
+T1.3 & L1 & Config JSON Server + db.json & 1j & T1.1 \\
+T1.4 & L1 & Structure dossiers + routing initial & 1j & T1.2, T1.3 \\
+T2.1 & L2 & AuthContext + demoAuthService & 2j & T1.4 \\
+T2.2 & L2 & Page Login (design + logique) & 2j & T2.1 \\
+T2.3 & L2 & PrivateRoute + protection routes & 1j & T2.1 \\
+T3.1 & L3 & firebaseService.js (CRUD clients/factures) & 3j & T2.3 \\
+T3.2 & L3 & jsonService.js (articles/catégories/params) & 2j & T2.3 \\
+T3.3 & L3 & Page Clients (liste + formulaire) & 3j & T3.1 \\
+T3.4 & L3 & Pages Articles + Catégories (CRUD) & 3j & T3.2 \\
+T3.5 & L3 & Page Paramètres & 2j & T3.2 \\
+T4.1 & L4 & FactureForm (structure + sélection client) & 3j & T3.1, T3.2 \\
+T4.2 & L4 & Lignes articles + calculs HT/TVA/TTC & 3j & T4.1 \\
+T4.3 & L4 & Système remises (ligne + globale) & 2j & T4.2 \\
+T4.4 & L4 & Suivi paiements (mode, dates, virement) & 2j & T4.2 \\
+T4.5 & L4 & FactureDetail (affichage + validation admin) & 3j & T4.2 \\
+T4.6 & L4 & Page Factures (liste + filtres + suppression) & 3j & T4.5 \\
+T5.1 & L5 & pdfGenerator.js (template PDF complet) & 4j & T4.5 \\
+T5.2 & L5 & Dashboard KPIs (calculs + StatCards) & 3j & T4.6 \\
+T5.3 & L5 & Graphique CA mensuel (Recharts) & 2j & T5.2 \\
+T6.1 & L6 & Thème dark glassmorphism (index.css) & 3j & T5.3 \\
+T6.2 & L6 & Animations 3D Framer Motion & 3j & T6.1 \\
+T6.3 & L6 & Icônes animées Lordicon & 1j & T6.1 \\
+T6.4 & L6 & Tests complets + corrections bugs & 5j & T6.3 \\
+T6.5 & L6 & Documentation + rapport PFA & 5j & T6.4 \\
+\hline
+\end{longtable}
+
+\subsection{Diagramme de Gantt}
+
+\begin{figure}[H]
+\centering
+% === PLACEHOLDER : Diagramme de Gantt ===
+\placeholder{Diagramme de Gantt — \texttt{figures/gantt\_diagram.png}\\Planning sur 16 semaines (Octobre 2025 — Janvier 2026)\\avec jalons : Sprint 1 (S2), Sprint 2 (S4), Sprint 3 (S6), Sprint 4 (S8),\\Sprint 5 (S10), Sprint 6 (S12), Finalisation (S14), Soutenance (S16)}
+\caption{Diagramme de Gantt — Planning projet 16 semaines}
+\label{fig:gantt}
+\end{figure}
+
+\subsection{Chemin critique}
+
+Le chemin critique identifié est : \textbf{T1.1 → T1.2 → T2.1 → T2.3 → T3.1 → T4.1 → T4.2 → T4.5 → T5.1 → T5.2 → T6.1 → T6.2 → T6.4 → T6.5}
+
+Ce chemin représente la séquence de tâches sans aucune marge de flexibilité. Tout retard sur l'une de ces tâches retarde directement la livraison finale. La tâche la plus critique est \textbf{T4.2} (calculs automatiques) — un blocage ici aurait impacté 7 tâches dépendantes.
+
+\section{Matrice RACI}
+
+\subsection{Tableau RACI complet}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Matrice RACI — Responsabilités par activité}
+\label{tab:raci}
+\begin{tabularx}{\textwidth}{|X|c|c|c|c|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Activité}} & \textcolor{white}{\textbf{ELKHAL}} & \textcolor{white}{\textbf{FALHAOUI}} & \textcolor{white}{\textbf{Encadrants}} & \textcolor{white}{\textbf{Jury}} \\
+\hline
+Analyse des besoins & R & C & A & I \\
+Conception architecture & R & C & C & I \\
+Développement Frontend & R & R & I & -- \\
+Configuration Firebase & R & C & I & -- \\
+Intégration JSON Server & C & R & I & -- \\
+Génération PDF & R & C & I & -- \\
+Design UI glassmorphism & C & R & C & -- \\
+Animations Framer Motion & R & C & I & -- \\
+Tests unitaires & R & R & I & -- \\
+Tests utilisateurs & C & C & I & A \\
+Correction bugs & R & R & I & -- \\
+Rédaction rapport PFA & R & R & C & A \\
+Soutenance & R & R & I & A \\
+\hline
+\end{tabularx}
+\end{table}
+
+\textit{Légende : R=Responsible (fait le travail) · A=Accountable (valide) · C=Consulted (consulté) · I=Informed (informé)}
+
+\subsection{Justification des choix RACI critiques}
+
+\begin{itemize}
+    \item \textbf{Encadrants en position A} sur l'analyse des besoins : ils valident que le périmètre est cohérent avec le PFA.
+    \item \textbf{Les deux membres en R} sur les tests et le rapport : responsabilité partagée pour assurer la qualité globale.
+    \item \textbf{Jury en A} sur l'évaluation finale : décision souveraine de notation.
+\end{itemize}
+
+\section{Gestion des risques et Analyse Pareto}
+
+\subsection{Registre des risques}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Registre des risques — Probabilité × Impact}
+\label{tab:risques}
+\begin{tabularx}{\textwidth}{|l|X|c|c|c|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Réf.}} & \textcolor{white}{\textbf{Risque}} & \textcolor{white}{\textbf{Prob.}} & \textcolor{white}{\textbf{Impact}} & \textcolor{white}{\textbf{Score}} \\
+\hline
+R1 & Erreurs de calcul NaN (champs vides) & 4 & 5 & \textbf{20} \\
+R2 & Quota Firebase dépassé (limite gratuite) & 2 & 5 & \textbf{10} \\
+R3 & Régression après modification du code & 3 & 4 & \textbf{12} \\
+R4 & Incompatibilité versions npm & 3 & 3 & \textbf{9} \\
+R5 & PDF mal formaté (débordements) & 4 & 4 & \textbf{16} \\
+R6 & Authentification localStorage peu sécurisée & 3 & 3 & \textbf{9} \\
+R7 & Retard dans la rédaction du rapport & 3 & 4 & \textbf{12} \\
+R8 & Perte de données Firebase (corruption) & 1 & 5 & \textbf{5} \\
+R9 & Mauvaise performance animations sur mobile & 3 & 2 & \textbf{6} \\
+R10 & JSON Server non disponible (port 3001) & 2 & 3 & \textbf{6} \\
+\hline
+\end{tabularx}
+\end{table}
+
+\textit{Légende : Probabilité et Impact notés de 1 (faible) à 5 (élevé) · Score = Prob × Impact}
+
+\subsection{Carte de chaleur — Matrice Probabilité/Impact}
+
+\begin{figure}[H]
+\centering
+% === PLACEHOLDER : Carte de chaleur des risques ===
+\placeholder{Carte de chaleur (Heatmap) Probabilité × Impact\\Rouge : R1(4×5=20), R5(4×4=16) · Orange : R3, R7 · Vert : R8, R9, R10}
+\caption{Carte de chaleur — Matrice Probabilité/Impact des risques}
+\label{fig:heatmap_risques}
+\end{figure}
+
+\subsection{Analyse Pareto — 20\% des risques = 80\% des impacts}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=0.85\textwidth, height=7cm,
+    ybar, bar width=0.5cm,
+    xlabel={Risques (triés par score décroissant)},
+    ylabel={Score (Prob × Impact)},
+    xtick=data,
+    xticklabels={R1,R5,R3,R7,R2,R4,R6,R9,R10,R8},
+    title={Analyse Pareto des risques projet},
+    ymin=0, ymax=25,
+    nodes near coords,
+    axis y line*=left,
+    axis x line*=bottom,
+    ]
+\addplot[fill=emsiblue!70] coordinates {
+    (1,20)(2,16)(3,12)(4,12)(5,10)(6,9)(7,9)(8,6)(9,6)(10,5)
+};
+\end{axis}
+\end{tikzpicture}
+\caption{Analyse Pareto — Les 2 risques prioritaires (R1+R5) représentent 38\% du risque total}
+\label{fig:pareto_risques}
+\end{figure}
+
+\textbf{Conclusion Pareto :} Les risques R1 (erreurs NaN) et R5 (PDF mal formaté) concentrent 38\% du score de risque total. Ces 20\% de risques critiques doivent recevoir 80\% de l'attention de mitigation.
+
+\subsection{Plans de mitigation}
+
+\rowcolors{2}{lightgray}{white}
+\begin{table}[H]
+\centering
+\caption{Plans de mitigation pour les 3 risques les plus critiques}
+\label{tab:mitigation}
+\begin{tabularx}{\textwidth}{|l|X|X|}
+\hline
+\rowcolor{emsiblue}\textcolor{white}{\textbf{Risque}} & \textcolor{white}{\textbf{Plan de mitigation}} & \textcolor{white}{\textbf{Plan de contingence}} \\
+\hline
+R1 — NaN calculs & Systématiser \texttt{parseFloat() || 0} et \texttt{isNaN()} sur toutes les entrées numériques & Afficher message d'erreur explicite et bloquer la soumission si NaN détecté \\
+R5 — PDF formaté & Tester PDF avec données réelles à chaque sprint ; limiter colonnes tableau & Repasser à un tableau simplifié (2 colonnes) avec détails en section séparée \\
+R3 — Régression & Tests manuels systématiques après chaque modification ; sauvegarde Git & Revenir au commit précédent (git revert) ; maintenir branche stable \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{Outils de pilotage et de suivi}
+
+\subsection{Tableau de bord de suivi}
+
+Un tableau de bord de suivi hebdomadaire a été maintenu, comprenant : avancement par tâche (\%), bugs ouverts/fermés, fonctionnalités livrées vs planifiées.
+
+\subsection{Outils utilisés}
+
+\begin{itemize}
+    \item \textbf{Git / GitHub} : Versioning du code, branches par fonctionnalité, commits descriptifs
+    \item \textbf{Trello} : Kanban des user stories (Backlog / En cours / Terminé / Testé)
+    \item \textbf{WhatsApp} : Communication équipe au quotidien
+    \item \textbf{Google Meet} : Réunions hebdomadaires de suivi avec encadrants
+\end{itemize}
+
+\subsection{Fréquence et mode des réunions}
+
+\begin{itemize}
+    \item \textbf{Réunion équipe :} Quotidienne (Daily Scrum — 15 minutes)
+    \item \textbf{Sprint review :} Bi-hebdomadaire avec revue du livrable sprint
+    \item \textbf{Réunion encadrant :} Hebdomadaire (lundi, Google Meet, 1 heure)
+\end{itemize}
+
+\section{Critères de réussite du projet}
+
+\subsection{KPIs techniques}
+
+\begin{itemize}
+    \item 100\% des fonctionnalités "Must have" implémentées et testées
+    \item 0 erreur de calcul sur les tests avec données réelles
+    \item Temps de génération PDF $<$ 1 seconde
+    \item Score Google Lighthouse performance $\geq$ 80
+\end{itemize}
+
+\subsection{KPIs managériaux et entrepreneuriaux}
+
+\begin{itemize}
+    \item Rapport PFA $\geq$ 80 pages, respectant la structure du guide
+    \item Soutenance réalisée dans les délais (Février 2026)
+    \item Note jury $\geq$ 14/20
+    \item Business Model Canvas validé avec seuil de rentabilité calculé
+\end{itemize}
+
+% ============================================================================
+% CONCLUSION GÉNÉRALE
+% ============================================================================
+\chapter*{Conclusion Générale}
+\addcontentsline{toc}{chapter}{Conclusion Générale}
+\markboth{Conclusion Générale}{Conclusion Générale}
+
+Ce rapport de Projet de Fin d'Année avait pour ambition de répondre à la question centrale : \textit{"Ce projet mérite-t-il d'exister techniquement, économiquement et opérationnellement ?"}
+
+Les cinq premiers chapitres ont apporté une réponse structurée et documentée aux dimensions entrepreneuriale et managériale de cette question. Le Chapitre 1 a validé l'existence du problème de gestion des factures auprès des PME et freelances marocains, confirmé par un sondage terrain (83\% d'intention d'utilisation). Le Chapitre 2 a démontré l'opportunité commerciale réelle dans un marché en croissance de 12,8\% par an, avec un positionnement différencié face aux concurrents marocains et internationaux. Le Chapitre 3 a formalisé le cadre du projet avec des objectifs SMART et une méthodologie Agile Scrum adaptée. Le Chapitre 4 a spécifié avec précision les besoins fonctionnels et non fonctionnels des profils USER et ADMIN, en utilisant la priorisation MoSCoW. Enfin, le Chapitre 5 a démontré la maturité managériale du projet à travers un WBS détaillé, un diagramme de Gantt réaliste, une matrice RACI claire et une gestion des risques rigoureuse appuyée par l'analyse Pareto.
+
+La partie technique de ce rapport — couvrant la conception UML, la réalisation par sprints et l'étude de viabilité entrepreneuriale — fait l'objet d'un document complémentaire dédié, afin d'apporter à chaque dimension la profondeur qu'elle mérite.
+
+% ============================================================================
+% BIBLIOGRAPHIE & NETOGRAPHIE
+% ============================================================================
+\clearpage
+\chapter*{Bibliographie \& Netographie}
+\addcontentsline{toc}{chapter}{Bibliographie \& Netographie}
+\markboth{Bibliographie \& Netographie}{Bibliographie \& Netographie}
+
+\section*{Références académiques et techniques}
+
+\begin{enumerate}
+
+\item Haut-Commissariat au Plan — Maroc. (2023). \textit{Enquête nationale sur les entreprises — Digitalisation des PME marocaines}. HCP. \url{https://www.hcp.ma} [Consulté le : 01/10/2025]
+
+\item CGEM. (2023). \textit{Rapport sur la transformation numérique des entreprises marocaines}. Confédération Générale des Entreprises du Maroc. \url{https://www.cgem.ma}
+
+\item Statista Research Department. (2024). \textit{Invoice Processing Software Market Size Worldwide 2024-2030}. \url{https://www.statista.com} [Consulté le : 01/10/2025]
+
+\item Ministère de l'Industrie et du Commerce — Maroc. (2023). \textit{Programme Intégré d'Appui et de Financement des Entreprises}. \url{https://www.mcinet.gov.ma}
+
+\item Direction Générale des Impôts — Maroc. (2024). \textit{Note circulaire relative à la facturation électronique}. \url{https://www.tax.gov.ma}
+
+\item Osterwalder, A., \& Pigneur, Y. (2010). \textit{Business Model Generation: A Handbook for Visionaries, Game Changers, and Challengers}. Wiley.
+
+\item Brown, T. (2009). \textit{Change by Design: How Design Thinking Transforms Organizations and Inspires Innovation}. HarperBusiness.
+
+\item Facebook Inc. (2024). \textit{React — A JavaScript library for building user interfaces}. \url{https://react.dev} [Consulté le : 15/10/2025]
+
+\item Google LLC. (2024). \textit{Firebase Documentation — Realtime Database}. \url{https://firebase.google.com/docs/database} [Consulté le : 20/10/2025]
+
+\item MUI Team. (2024). \textit{Material UI v7 — React Component Library}. \url{https://mui.com} [Consulté le : 15/10/2025]
+
+\item Framer. (2024). \textit{Framer Motion — Production-ready motion library for React}. \url{https://www.framer.com/motion}
+
+\item typicode. (2024). \textit{JSON Server — Get a full fake REST API with zero coding}. \url{https://github.com/typicode/json-server}
+
+\item Parallax. (2024). \textit{jsPDF — Client-side JavaScript PDF generation}. \url{https://github.com/parallax/jsPDF}
+
+\item Royaume du Maroc. (2009). \textit{Loi n° 09-08 relative à la protection des personnes physiques à l'égard du traitement des données à caractère personnel}. Bulletin Officiel.
+
+\item OMPIC. (2024). \textit{Procédures de dépôt de marque au Maroc}. \url{https://www.ompic.ma}
+
+\end{enumerate}
+
+% ============================================================================
+% ANNEXES
+% ============================================================================
+\begin{appendices}
+\renewcommand{\chaptername}{Annexe}
+
+\chapter{Guide d'entretien / Questionnaire de validation terrain}
+
+Ce questionnaire a été utilisé lors des 8 entretiens semi-directifs menés avec des freelances et dirigeants de PME pour valider la problématique (Chapitre 1, Section 1.8).
+
+\section*{Section A — Profil de l'interviewé}
+\begin{enumerate}
+    \item Quel est votre poste et la taille de votre entreprise ?
+    \item Depuis combien de temps gérez-vous des factures dans votre activité ?
+    \item Dans quel secteur d'activité exercez-vous (IT, services, commerce, artisanat) ?
+\end{enumerate}
+
+\section*{Section B — Pratiques actuelles}
+\begin{enumerate}
+    \item Quels outils utilisez-vous actuellement pour créer vos factures ?
+    \item Combien de temps consacrez-vous à la facturation par semaine ?
+    \item Avez-vous déjà commis des erreurs de calcul (TVA, remises) sur vos factures ?
+    \item Comment archivez-vous vos factures actuellement ?
+\end{enumerate}
+
+\section*{Section C — Besoins et attentes}
+\begin{enumerate}
+    \item Quels sont les 3 problèmes principaux que vous rencontrez dans votre gestion actuelle ?
+    \item Quelles fonctionnalités vous semblent indispensables dans un outil de facturation ?
+    \item Seriez-vous prêt à payer un abonnement mensuel ? Quel montant vous semble raisonnable en MAD ?
+    \item Avez-vous déjà essayé un logiciel de facturation marocain (Sage Maroc, Ciel, WinFact) ?
+\end{enumerate}
+
+\chapter{Résultats bruts du sondage de validation terrain}
+
+\placeholder{Graphiques et tableaux détaillés du sondage en ligne (n=47)\\Inclure : graphiques camembert par question, tableau croisé par profil, répartition géographique Maroc}
+
+\chapter{Données financières détaillées}
+
+\placeholder{Tableaux complets :\\- Détail charges fixes et variables\\- Projections mois par mois sur 24 mois\\- Analyse de sensibilité (scénario pessimiste/base/optimiste)\\- Comparaison avec tarifs concurrents marocains}
+
+\chapter{Compte-rendus de réunions de suivi}
+
+\placeholder{Comptes-rendus hebdomadaires des réunions avec les encadrants\\Format : Date, Participants, Points discutés, Décisions prises, Prochaines étapes}
+
+\end{appendices}
+
+% ============================================================================
+% FIN DU DOCUMENT
+% ============================================================================
+\end{document}

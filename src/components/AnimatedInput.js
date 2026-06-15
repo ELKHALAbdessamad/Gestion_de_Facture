@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { TextField, Box, InputAdornment } from '@mui/material';
-import { motion } from 'framer-motion';
 
 export const AnimatedInput = ({ icon, label, error, helperText, ...props }) => {
   const [isFocused, setIsFocused] = useState(false);

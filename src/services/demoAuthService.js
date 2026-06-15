@@ -1,130 +1,201 @@
-// Service d'authentification de démo (sans Firebase Auth)
-// Utilise localStorage pour simuler l'authentification
+// ─── Service d'authentification hybride ───────────────────────────────────
+// Priorité : Firebase Auth + Realtime Database
+// Fallback : comptes démo localStorage (si Firebase indisponible)
 
 const DEMO_USERS = {
-  'admin@test.com': {
-    password: 'admin123',
-    uid: 'demo-admin-uid',
-    email: 'admin@test.com',
-    role: 'admin',
-    nom: 'Administrateur'
-  },
-  'user@test.com': {
-    password: 'user123',
-    uid: 'demo-user-uid',
-    email: 'user@test.com',
-    role: 'user',
-    nom: 'Utilisateur'
+  'admin@test.com': { password: 'admin123', uid: 'demo-admin-uid', role: 'admin', nom: 'Administrateur', email: 'admin@test.com' },
+  'user@test.com':  { password: 'user123',  uid: 'demo-user-uid',  role: 'user',  nom: 'Utilisateur',    email: 'user@test.com'  },
+};
+const STORAGE_KEY = 'demo_current_user';
+const REGISTERED_KEY = 'demo_registered_users';
+
+let authListeners = [];
+
+const notifyAuthChange = (user) => authListeners.forEach(cb => cb(user));
+
+const loadFirebaseAuth = () => import('./authService');
+
+const getRegisteredUsers = () => {
+  try {
+    return JSON.parse(localStorage.getItem(REGISTERED_KEY) || '{}');
+  } catch {
+    return {};
   }
 };
 
-const STORAGE_KEY = 'demo_current_user';
-
-export const loginUser = (email, password) => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const user = DEMO_USERS[email];
-      
-      if (!user) {
-        reject(new Error('Utilisateur non trouvé'));
-        return;
-      }
-      
-      if (user.password !== password) {
-        reject(new Error('Mot de passe incorrect'));
-        return;
-      }
-      
-      const userSession = {
-        uid: user.uid,
-        email: user.email,
-        role: user.role,
-        nom: user.nom
-      };
-      
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(userSession));
-      
-      // Notifier tous les listeners
-      notifyAuthChange(userSession);
-      
-      resolve({ user: userSession });
-    }, 500);
-  });
+const saveRegisteredUser = (email, data) => {
+  const registered = getRegisteredUsers();
+  registered[email] = data;
+  localStorage.setItem(REGISTERED_KEY, JSON.stringify(registered));
 };
 
-export const logoutUser = () => {
-  return new Promise((resolve) => {
+const loginWithDemoFallback = (email, password) => new Promise((resolve, reject) => {
+  const registered = getRegisteredUsers();
+  const user = DEMO_USERS[email] || registered[email];
+
+  if (!user) {
+    reject(new Error('Utilisateur non trouvé'));
+    return;
+  }
+  if (user.password !== password) {
+    reject(new Error('Mot de passe incorrect'));
+    return;
+  }
+
+  const session = { uid: user.uid, email, role: user.role, nom: user.nom };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+  notifyAuthChange(session);
+  resolve({ user: session });
+});
+
+const mapFirebaseError = (err) => {
+  const code = err?.code || '';
+  const messages = {
+    'auth/email-already-in-use': 'Cet email est déjà utilisé',
+    'auth/invalid-email': 'Adresse email invalide',
+    'auth/weak-password': 'Le mot de passe doit contenir au moins 6 caractères',
+    'auth/user-not-found': 'Aucun compte trouvé avec cet email',
+    'auth/wrong-password': 'Mot de passe incorrect',
+    'auth/invalid-credential': 'Email ou mot de passe incorrect',
+    'auth/too-many-requests': 'Trop de tentatives, réessayez plus tard',
+  };
+  return new Error(messages[code] || err?.message || 'Erreur d\'authentification');
+};
+
+export const registerUser = async ({ email, password, nom, entreprise = '', telephone = '' }) => {
+  try {
+    const { createUser } = await loadFirebaseAuth();
+    const userSession = await createUser(email, password, nom, 'user', { entreprise, telephone });
+    notifyAuthChange(userSession);
+    return { user: userSession };
+  } catch (err) {
+    if (err?.code === 'auth/operation-not-allowed' || err?.code === 'auth/configuration-not-found') {
+      const registered = getRegisteredUsers();
+      if (DEMO_USERS[email] || registered[email]) {
+        throw new Error('Cet email est déjà utilisé');
+      }
+      const uid = `demo-${Date.now()}`;
+      saveRegisteredUser(email, {
+        password,
+        uid,
+        role: 'user',
+        nom,
+        email,
+        entreprise,
+        telephone,
+      });
+      const session = { uid, email, role: 'user', nom };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+      notifyAuthChange(session);
+      return { user: session };
+    }
+    throw mapFirebaseError(err);
+  }
+};
+
+export const loginUser = async (email, password) => {
+  try {
+    const { loginWithFirebase } = await loadFirebaseAuth();
+    const userSession = await loginWithFirebase(email, password);
     localStorage.removeItem(STORAGE_KEY);
-    
-    // Notifier tous les listeners
-    notifyAuthChange(null);
-    
-    resolve();
-  });
+    notifyAuthChange(userSession);
+    return { user: userSession };
+  } catch (err) {
+    if (['auth/user-not-found', 'auth/invalid-credential', 'auth/wrong-password', 'auth/invalid-login-credentials'].includes(err?.code)) {
+      try {
+        return await loginWithDemoFallback(email, password);
+      } catch {
+        throw mapFirebaseError(err);
+      }
+    }
+    if (err?.code === 'auth/operation-not-allowed' || err?.code === 'auth/configuration-not-found') {
+      return loginWithDemoFallback(email, password);
+    }
+    throw mapFirebaseError(err);
+  }
+};
+
+export const logoutUser = async () => {
+  try {
+    const { logoutWithFirebase } = await loadFirebaseAuth();
+    await logoutWithFirebase();
+  } catch {
+    // ignore
+  }
+  localStorage.removeItem(STORAGE_KEY);
+  notifyAuthChange(null);
 };
 
 export const getCurrentUser = () => {
-  const userStr = localStorage.getItem(STORAGE_KEY);
-  return userStr ? JSON.parse(userStr) : null;
+  const str = localStorage.getItem(STORAGE_KEY);
+  return str ? JSON.parse(str) : null;
 };
 
-// Listeners pour les changements d'authentification
-let authListeners = [];
-
 export const onAuthChange = (callback) => {
-  // Ajouter le listener
   authListeners.push(callback);
-  
-  // Appeler immédiatement avec l'utilisateur actuel
-  const currentUser = getCurrentUser();
-  callback(currentUser);
-  
-  // Retourner une fonction de nettoyage
+
+  let unsubscribeFirebase = () => {};
+
+  loadFirebaseAuth()
+    .then(({ onFirebaseAuthChange, auth }) => {
+      unsubscribeFirebase = onFirebaseAuthChange((user) => {
+        if (user) {
+          localStorage.removeItem(STORAGE_KEY);
+        }
+        callback(user);
+      });
+
+      if (!auth.currentUser) {
+        const demo = getCurrentUser();
+        if (demo) callback(demo);
+      }
+    })
+    .catch(() => {
+      callback(getCurrentUser());
+    });
+
   return () => {
-    authListeners = authListeners.filter(listener => listener !== callback);
+    unsubscribeFirebase();
+    authListeners = authListeners.filter(l => l !== callback);
   };
 };
 
-// Notifier tous les listeners d'un changement
-const notifyAuthChange = (user) => {
-  authListeners.forEach(listener => listener(user));
-};
-
 export const getUserRole = async (uid) => {
-  // D'abord vérifier dans l'utilisateur actuel (mode démo)
-  const currentUser = getCurrentUser();
-  if (currentUser && currentUser.uid === uid && currentUser.role) {
-    return currentUser.role;
-  }
-  
-  // Sinon chercher dans les utilisateurs de démo
-  const user = Object.values(DEMO_USERS).find(u => u.uid === uid);
-  if (user) {
-    return user.role;
-  }
-  
-  // Sinon chercher dans Firebase (si configuré)
   try {
-    // Cette partie sera utilisée si Firebase est configuré plus tard
-    return null;
-  } catch (error) {
-    return null;
+    const { auth } = await loadFirebaseAuth();
+    if (auth.currentUser?.uid === uid) {
+      const { getDatabase, ref, get } = await import('firebase/database');
+      const { getApps } = await import('firebase/app');
+      const db = getDatabase(getApps()[0]);
+      const snap = await get(ref(db, `users/${uid}`));
+      if (snap.exists()) return snap.val().role || 'user';
+    }
+  } catch {
+    // fallback below
   }
+
+  const current = getCurrentUser();
+  if (current?.uid === uid) return current.role;
+
+  const registered = Object.values(getRegisteredUsers());
+  const reg = registered.find(u => u.uid === uid);
+  if (reg) return reg.role;
+
+  const demo = Object.values(DEMO_USERS).find(u => u.uid === uid);
+  return demo?.role || 'user';
 };
 
-// Initialiser les utilisateurs dans Firebase Realtime Database
-export const initDemoUsers = async (database, set, ref) => {
+export const initDemoUsers = async (database, set, refFn) => {
   try {
-    for (const [email, userData] of Object.entries(DEMO_USERS)) {
-      await set(ref(database, `users/${userData.uid}`), {
-        email: userData.email,
-        role: userData.role,
-        nom: userData.nom,
-        createdAt: new Date().toISOString()
+    for (const [, u] of Object.entries(DEMO_USERS)) {
+      await set(refFn(database, `users/${u.uid}`), {
+        email: u.email,
+        role: u.role,
+        nom: u.nom,
+        createdAt: new Date().toISOString(),
       });
     }
-    console.log('✓ Utilisateurs de démo initialisés dans Firebase');
-  } catch (error) {
-    console.error('Erreur lors de l\'initialisation des utilisateurs:', error);
+  } catch (e) {
+    console.warn('initDemoUsers:', e.message);
   }
 };

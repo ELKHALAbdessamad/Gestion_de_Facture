@@ -1,0 +1,137 @@
+@startuml class_diagram
+title Diagramme de Classes — Application Gestion des Factures
+
+skinparam classBackgroundColor #D4E6F1
+skinparam classBorderColor #2E86C1
+skinparam classHeaderBackgroundColor #2E86C1
+skinparam classHeaderFontColor #FFFFFF
+skinparam backgroundColor #FEFEFE
+skinparam ArrowColor #2E86C1
+
+class User {
+  - uid : String
+  - email : String
+  - role : String
+  --
+  + login(email, password) : Boolean
+  + logout() : void
+  + isAdmin() : Boolean
+}
+
+class Client {
+  - id : String
+  - nom : String
+  - email : String
+  - tel : String
+  - adresse : String
+  --
+  + getFactures() : List<Facture>
+  + toFirebaseObject() : Object
+}
+
+class Facture {
+  - id : String
+  - numero : String
+  - date_creation : Date
+  - date_echeance : Date
+  - client_id : String
+  - statut : StatutFacture
+  - total_ht : Float
+  - remise_globale : Float
+  - remise_montant : Float
+  - total_apres_remise : Float
+  - tva : Float
+  - total_ttc : Float
+  - mode_paiement : String
+  - date_depot : Date
+  - date_encaissement : Date
+  - type_virement : String
+  - validated_by_admin : Boolean
+  - validated_by : String
+  - validated_at : Date
+  --
+  + calculateSubtotal() : Float
+  + calculateGlobalDiscount() : Float
+  + calculateTax() : Float
+  + calculateTotal() : Float
+  + generatePDF() : void
+  + validate(adminEmail) : void
+}
+
+enum StatutFacture {
+  DRAFT
+  EN_ATTENTE
+  PAYEE
+  REJETEE
+}
+
+class ArticleFacture {
+  - designation : String
+  - quantite : Integer
+  - prix_unitaire : Float
+  - remise : Float
+  - tva : Float
+  --
+  + calculateLineTotal() : Float
+  + getSubtotal() : Float
+  + getDiscountAmount() : Float
+}
+
+class Article {
+  - id : Integer
+  - designation : String
+  - prix_unitaire : Float
+  - categorie_id : Integer
+  --
+  + getCategorie() : Categorie
+  + toFactureLine() : ArticleFacture
+}
+
+class Categorie {
+  - id : Integer
+  - nom : String
+  - tva : Float
+  --
+  + getTauxTVA() : Float
+}
+
+class Parametres {
+  - nom : String
+  - adresse : String
+  - code_postal : String
+  - ville : String
+  - tel : String
+  - email : String
+  - siret : String
+  --
+  + getEntreprise() : Object
+  + update(data) : void
+}
+
+' Relations
+User "1" -- "0..*" Facture : crée/gère >
+Client "1" -- "0..*" Facture : factured <
+Facture "1" *-- "1..*" ArticleFacture : contient >
+Article "1" -- "0..*" ArticleFacture : référencé par >
+Categorie "1" -- "0..*" Article : classifie >
+Facture ..> StatutFacture : uses
+
+note right of Facture
+  Stockée dans Firebase Realtime DB
+  Identifiant auto-généré (push)
+  Synchronisation temps réel
+end note
+
+note right of Article
+  Stocké dans JSON Server
+  Accessible via API REST
+  Port 3001
+end note
+
+note bottom of ArticleFacture
+  Calculé côté client React
+  parseFloat(qty) || 0 pour
+  protection contre NaN
+end note
+
+@enduml

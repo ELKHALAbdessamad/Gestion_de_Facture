@@ -1,24 +1,13 @@
 import { initializeApp } from "firebase/app";
-import { getDatabase, ref, push, set, get, update, remove, query, orderByChild } from "firebase/database";
-// Import du service d'authentification de démo
+import { getDatabase, ref, push, set, get, update, remove } from "firebase/database";
+import { firebaseConfig } from '../config/firebase';
 import * as demoAuth from './demoAuthService';
-
-const firebaseConfig = {
-  apiKey: "AIzaSyCzE0DqRUFXzbqDMxOgvsFZqk1wOCpW9ig",
-  authDomain: "gestion-des-factures-52d03.firebaseapp.com",
-  databaseURL: "https://gestion-des-factures-52d03-default-rtdb.firebaseio.com",
-  projectId: "gestion-des-factures-52d03",
-  storageBucket: "gestion-des-factures-52d03.firebasestorage.app",
-  messagingSenderId: "362567183024",
-  appId: "1:362567183024:web:d05e9af88f0dc05cd0a975",
-  measurementId: "G-RDK8KRTL6H"
-};
 
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
-// Utiliser l'authentification de démo
 export const loginUser = demoAuth.loginUser;
+export const registerUser = demoAuth.registerUser;
 export const logoutUser = demoAuth.logoutUser;
 export const getCurrentUser = demoAuth.getCurrentUser;
 export const onAuthChange = demoAuth.onAuthChange;

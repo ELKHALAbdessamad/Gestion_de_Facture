@@ -1,0 +1,74 @@
+@startuml sequence_create_facture
+title DS-02 : Diagramme de Séquence — Création d'une Facture
+
+skinparam backgroundColor #FEFEFE
+skinparam sequenceArrowColor #2E86C1
+skinparam sequenceParticipantBackgroundColor #D4E6F1
+
+actor "USER" as User
+participant "FactureForm.js" as Form
+participant "firebaseService" as FBSvc
+participant "jsonService" as JSONSvc
+database "Firebase\nRealtime DB" as FB
+database "JSON Server\n:3001" as JS
+
+== Chargement du formulaire ==
+User -> Form : Navigation vers /factures/nouvelle
+Form -> Form : useEffect() déclenché
+
+par Chargements parallèles
+  Form -> FBSvc : getClients()
+  FBSvc -> FB : GET /clients
+  FB --> FBSvc : snapshot clients
+  FBSvc --> Form : clientsData[]
+and
+  Form -> JSONSvc : getArticles()
+  JSONSvc -> JS : GET http://localhost:3001/articles
+  JS --> JSONSvc : articles[]
+  JSONSvc --> Form : articlesData[]
+and
+  Form -> JSONSvc : getCategories()
+  JSONSvc -> JS : GET http://localhost:3001/categories
+  JS --> JSONSvc : categories[]
+  JSONSvc --> Form : categoriesData[]
+end
+
+Form -> Form : generateNumero() → "INV-0615"
+Form --> User : Affichage formulaire vide
+
+== Saisie de la facture ==
+User -> Form : Sélectionner client
+Form -> Form : setFormData({...client_id})
+Form --> User : Affichage coordonnées client
+
+loop Pour chaque ligne d'article
+  User -> Form : Saisir description, qty, prix, remise%
+  Form -> Form : handleLineChange(index, field, value)
+  Form -> Form : subtotal = qty * price
+  Form -> Form : lineTotal = subtotal * (1 - remise/100)
+  Form -> Form : item.total = lineTotal
+  Form --> User : Mise à jour total ligne en temps réel
+end
+
+User -> Form : Saisir remise globale %
+Form -> Form : calculateSubtotal() → somme des totaux lignes
+Form -> Form : calculateGlobalDiscount() → HT * remise%
+Form -> Form : calculateSubtotalAfterDiscount()
+Form -> Form : calculateTax() → total_apres_remise * 0.20
+Form -> Form : calculateTotal() → after_discount + tax
+Form --> User : Mise à jour totaux (HT, Remise, TVA, TTC)
+
+== Soumission ==
+User -> Form : Clic "Envoyer la Facture"
+Form -> Form : handleSubmit('send')
+Form -> Form : Construire factureData (articles[], montants)
+
+Form -> FBSvc : addFacture(factureData)
+FBSvc -> FB : push('/factures', factureData)
+FB --> FBSvc : newKey (ID facture)
+FBSvc --> Form : success
+
+Form -> Form : navigate('/factures')
+Form --> User : Redirection liste factures
+
+@enduml

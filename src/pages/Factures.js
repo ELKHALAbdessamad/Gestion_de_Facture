@@ -1,43 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
-  Button,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Typography,
-  Chip,
-  IconButton
+  Box, Button, Paper, Table, TableBody, TableCell,
+  TableContainer, TableHead, TableRow, Typography, Chip,
+  IconButton, TextField, InputAdornment, MenuItem, Select
 } from '@mui/material';
-import { Add, Visibility, GetApp, Edit } from '@mui/icons-material';
+import { Add, Visibility, GetApp, Edit, Delete, TableChart, Search, Archive } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { getFactures } from '../services/firebaseService';
-import { getClients } from '../services/firebaseService';
+import { getFactures, deleteFacture, getClients } from '../services/firebaseService';
 import { getArticles, getParametres } from '../services/jsonService';
 import { downloadFacturePDF } from '../utils/pdfGenerator';
+import { exportFacturesToExcel } from '../utils/excelExporter';
+import { notify } from '../services/notificationService';
+import { formatMoney } from '../utils/currency';
+import { ArchiveModal } from '../components/ArchiveModal';
 import { LordIcon, Icons } from '../components/LordIcon';
+import { useAuth } from '../contexts/AuthContext';
 
 export const Factures = () => {
   const [factures, setFactures] = useState([]);
   const [clients, setClients] = useState([]);
   const [articles, setArticles] = useState([]);
   const [parametres, setParametres] = useState(null);
+  const [search, setSearch] = useState('');
+  const [filterStatut, setFilterStatut] = useState('Tous');
+  const [filterYear, setFilterYear] = useState('Toutes');
+  const [archiveOpen, setArchiveOpen] = useState(false);
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     const [facturesData, clientsData, articlesData, parametresData] = await Promise.all([
-      getFactures(),
-      getClients(),
-      getArticles(),
-      getParametres()
+      getFactures(), getClients(), getArticles(), getParametres()
     ]);
     setFactures(facturesData);
     setClients(clientsData);
@@ -50,121 +45,301 @@ export const Factures = () => {
     return client ? client.nom : 'Client inconnu';
   };
 
-  const getStatusColor = (statut) => {
-    switch (statut) {
-      case 'Payée': return 'success';
-      case 'En attente': return 'warning';
-      case 'Rejetée': return 'error';
-      default: return 'default';
+  const statusColor = (s) => {
+    if (s === 'Payée')      return 'success';
+    if (s === 'En attente') return 'warning';
+    if (s === 'Rejetée')    return 'error';
+    return 'default';
+  };
+
+  const handleDownloadPDF = async (facture) => {
+    const client = clients.find(c => c.id === facture.client_id);
+    if (client && parametres) {
+      try {
+        await downloadFacturePDF(facture, client, articles, parametres);
+        notify.pdfGenere(facture.numero);
+      } catch (e) {
+        notify.error('Erreur lors de la génération du PDF');
+      }
     }
   };
 
-  const handleDownloadPDF = (facture) => {
-    const client = clients.find(c => c.id === facture.client_id);
-    if (client && parametres) {
-      downloadFacturePDF(facture, client, articles, parametres);
+  const handleDelete = async (facture) => {
+    if (window.confirm(`Supprimer la facture ${facture.numero} ?`)) {
+      await deleteFacture(facture.id);
+      notify.factureSupprimee(facture.numero);
+      loadData();
     }
   };
+
+  const handleExportExcel = () => {
+    exportFacturesToExcel(filteredFactures, clients);
+    notify.excelExporte();
+  };
+
+  // Filtrage + archivage annuel
+  const availableYears = [...new Set(
+    factures
+      .map(f => f.date_creation && new Date(f.date_creation).getFullYear())
+      .filter(Boolean)
+  )].sort((a, b) => b - a);
+
+  const filteredFactures = factures
+    .filter(f => {
+      const client = getClientName(f.client_id).toLowerCase();
+      const num    = (f.numero || '').toLowerCase();
+      const q      = search.toLowerCase();
+      const matchSearch  = !q || client.includes(q) || num.includes(q);
+      const matchStatut  = filterStatut === 'Tous' || f.statut === filterStatut;
+      const year = f.date_creation ? new Date(f.date_creation).getFullYear() : null;
+      const matchYear = filterYear === 'Toutes' || year === parseInt(filterYear, 10);
+      return matchSearch && matchStatut && matchYear;
+    })
+    .sort((a, b) => new Date(b.date_creation) - new Date(a.date_creation));
+
+  // KPI résumé rapide
+  const totalTTC    = filteredFactures.reduce((s, f) => s + (f.total_ttc || 0), 0);
+  const nbPayees    = filteredFactures.filter(f => f.statut === 'Payée').length;
+  const nbEnAttente = filteredFactures.filter(f => f.statut === 'En attente').length;
+
+  const inputSx = {
+    '& .MuiOutlinedInput-root': {
+      borderRadius: 2,
+      background: 'rgba(255,255,255,0.03)',
+      border: '1px solid rgba(255,255,255,0.08)',
+      color: '#fff',
+      '& fieldset': { border: 'none' },
+      '&:hover': { background: 'rgba(255,255,255,0.05)' },
+    },
+  };
+
+  const devise = parametres?.devise || 'MAD';
 
   return (
     <Box className="fade-in-up">
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+
+      {/* ── En-tête ── */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
         <Box display="flex" alignItems="center" gap={2}>
-          <LordIcon 
-            src={Icons.invoice}
-            trigger="loop"
-            size={48}
-            colors="primary:#D4A853"
-          />
-          <Typography variant="h4" sx={{ fontWeight: 800, color: '#fff' }}>
-            Gestion des Factures
-          </Typography>
+          <LordIcon src={Icons.invoice} trigger="loop" size={48} colors="primary:#D4A853" />
+          <Box>
+            <Typography variant="h4" fontWeight={800} sx={{ color: '#fff' }}>
+              Gestion des Factures
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)' }}>
+              {filteredFactures.length} facture{filteredFactures.length > 1 ? 's' : ''} —
+              Total&nbsp;TTC&nbsp;: <b style={{ color: '#D4A853' }}>{formatMoney(totalTTC, devise)}</b>
+            </Typography>
+          </Box>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={() => navigate('/factures/nouvelle')}
-          sx={{
-            borderRadius: 2,
-            px: 3,
-            py: 1.5,
-            fontWeight: 700
-          }}
-        >
-          Nouvelle Facture
-        </Button>
+
+        <Box display="flex" gap={1} flexWrap="wrap">
+          {/* Export Excel */}
+          <Button
+            variant="outlined"
+            startIcon={<TableChart />}
+            onClick={handleExportExcel}
+            sx={{
+              borderColor: '#4ade80', color: '#4ade80', fontWeight: 600,
+              '&:hover': { background: 'rgba(74,222,128,0.1)' }
+            }}
+          >
+            Export Excel
+          </Button>
+
+          {/* Archivage annuel */}
+          <Button
+            variant="outlined"
+            startIcon={<Archive />}
+            onClick={() => setArchiveOpen(true)}
+            sx={{
+              borderColor: '#a78bfa', color: '#a78bfa', fontWeight: 600,
+              '&:hover': { background: 'rgba(167,139,250,0.1)' }
+            }}
+          >
+            Archiver
+          </Button>
+
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => navigate('/factures/nouvelle')}
+            sx={{ borderRadius: 2, px: 3, py: 1.2, fontWeight: 700 }}
+          >
+            Nouvelle Facture
+          </Button>
+        </Box>
       </Box>
 
+      {/* ── Mini KPIs ── */}
+      <Box display="flex" gap={2} mb={3} flexWrap="wrap">
+        {[
+          { label: 'Total', value: factures.length, color: '#D4A853' },
+          { label: 'Payées', value: nbPayees, color: '#4ade80' },
+          { label: 'En attente', value: nbEnAttente, color: '#fbbf24' },
+          { label: 'Rejetées', value: factures.filter(f => f.statut === 'Rejetée').length, color: '#ef4444' },
+        ].map(k => (
+          <Paper
+            key={k.label}
+            sx={{
+              px: 3, py: 1.5, borderRadius: 2,
+              background: 'rgba(255,255,255,0.03)',
+              border: `1px solid ${k.color}30`,
+            }}
+          >
+            <Typography variant="h5" fontWeight={800} sx={{ color: k.color }}>{k.value}</Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 1 }}>
+              {k.label}
+            </Typography>
+          </Paper>
+        ))}
+      </Box>
+
+      {/* ── Filtres ── */}
+      <Box display="flex" gap={2} mb={3} flexWrap="wrap">
+        <TextField
+          placeholder="Rechercher numéro ou client..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          size="small"
+          sx={{ ...inputSx, width: 280 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search sx={{ color: 'rgba(255,255,255,0.3)' }} />
+              </InputAdornment>
+            ),
+          }}
+        />
+        <Select
+          value={filterYear}
+          onChange={e => setFilterYear(e.target.value)}
+          size="small"
+          displayEmpty
+          sx={{
+            ...inputSx,
+            '& .MuiSelect-select': { color: '#fff' },
+            minWidth: 150,
+          }}
+        >
+          <MenuItem value="Toutes">Toutes années</MenuItem>
+          {availableYears.map(y => (
+            <MenuItem key={y} value={String(y)}>Archives {y}</MenuItem>
+          ))}
+        </Select>
+        <Select
+          value={filterStatut}
+          onChange={e => setFilterStatut(e.target.value)}
+          size="small"
+          sx={{
+            ...inputSx,
+            '& .MuiSelect-select': { color: '#fff' },
+            minWidth: 150,
+          }}
+        >
+          {['Tous', 'Draft', 'En attente', 'Payée', 'Rejetée'].map(s => (
+            <MenuItem key={s} value={s}>{s}</MenuItem>
+          ))}
+        </Select>
+      </Box>
+
+      {/* ── Tableau ── */}
       <TableContainer component={Paper} className="bento-card" sx={{ borderRadius: 3 }}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.875rem', letterSpacing: 1 }}>Numéro</TableCell>
-              <TableCell sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.875rem', letterSpacing: 1 }}>Date</TableCell>
-              <TableCell sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.875rem', letterSpacing: 1 }}>Client</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.875rem', letterSpacing: 1 }}>Total TTC</TableCell>
-              <TableCell sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.875rem', letterSpacing: 1 }}>Statut</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.875rem', letterSpacing: 1 }}>Actions</TableCell>
+              {['Numéro', 'Date', 'Client', 'Total TTC', 'Statut', 'Validé', 'Actions'].map(h => (
+                <TableCell
+                  key={h}
+                  align={h === 'Total TTC' || h === 'Actions' ? 'right' : 'left'}
+                  sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: 1, color: 'rgba(255,255,255,0.6)' }}
+                >
+                  {h}
+                </TableCell>
+              ))}
             </TableRow>
           </TableHead>
           <TableBody>
-            {factures.map((facture) => (
-              <TableRow 
-                key={facture.id}
-                sx={{
-                  '&:hover': {
-                    background: 'rgba(255, 255, 255, 0.03)'
-                  }
-                }}
-              >
-                <TableCell sx={{ fontWeight: 600 }}>{facture.numero}</TableCell>
-                <TableCell>
-                  {new Date(facture.date_creation).toLocaleDateString('fr-FR')}
-                </TableCell>
-                <TableCell>{getClientName(facture.client_id)}</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 600 }}>{facture.total_ttc?.toFixed(2)} €</TableCell>
-                <TableCell>
-                  <Chip
-                    label={facture.statut}
-                    color={getStatusColor(facture.statut)}
-                    size="small"
-                    sx={{ fontWeight: 600 }}
-                  />
-                </TableCell>
-                <TableCell align="right">
-                  <IconButton
-                    onClick={() => navigate(`/factures/${facture.id}`)}
-                    sx={{ 
-                      color: '#D4A853',
-                      '&:hover': { background: 'rgba(212, 168, 83, 0.1)' }
-                    }}
-                  >
-                    <Visibility />
-                  </IconButton>
-                  <IconButton
-                    onClick={() => navigate(`/factures/edit/${facture.id}`)}
-                    sx={{ 
-                      color: '#60a5fa',
-                      '&:hover': { background: 'rgba(96, 165, 250, 0.1)' }
-                    }}
-                  >
-                    <Edit />
-                  </IconButton>
-                  <IconButton
-                    onClick={() => handleDownloadPDF(facture)}
-                    sx={{ 
-                      color: '#4ade80',
-                      '&:hover': { background: 'rgba(74, 222, 128, 0.1)' }
-                    }}
-                  >
-                    <GetApp />
-                  </IconButton>
+            {filteredFactures.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} align="center" sx={{ py: 4, color: 'rgba(255,255,255,0.4)' }}>
+                  Aucune facture trouvée
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              filteredFactures.map(facture => (
+                <TableRow
+                  key={facture.id}
+                  sx={{ cursor: 'pointer', '&:hover': { background: 'rgba(255,255,255,0.03)' } }}
+                >
+                  <TableCell sx={{ fontWeight: 600, color: '#D4A853' }}>
+                    {facture.numero}
+                  </TableCell>
+                  <TableCell sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                    {new Date(facture.date_creation).toLocaleDateString('fr-FR')}
+                  </TableCell>
+                  <TableCell sx={{ color: '#fff', fontWeight: 600 }}>
+                    {getClientName(facture.client_id)}
+                  </TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700, color: '#fff' }}>
+                    {formatMoney(facture.total_ttc, devise)}
+                  </TableCell>
+                  <TableCell>
+                    <Chip label={facture.statut} color={statusColor(facture.statut)} size="small" sx={{ fontWeight: 600 }} />
+                  </TableCell>
+                  <TableCell>
+                    {facture.validated_by_admin
+                      ? <Chip label="✓" color="success" size="small" variant="outlined" />
+                      : <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem' }}>—</Typography>
+                    }
+                  </TableCell>
+                  <TableCell align="right">
+                    <IconButton
+                      size="small"
+                      onClick={() => navigate(`/factures/${facture.id}`)}
+                      sx={{ color: '#D4A853', '&:hover': { background: 'rgba(212,168,83,0.1)' } }}
+                    >
+                      <Visibility fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => navigate(`/factures/edit/${facture.id}`)}
+                      sx={{ color: '#60a5fa', '&:hover': { background: 'rgba(96,165,250,0.1)' } }}
+                    >
+                      <Edit fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleDownloadPDF(facture)}
+                      sx={{ color: '#4ade80', '&:hover': { background: 'rgba(74,222,128,0.1)' } }}
+                    >
+                      <GetApp fontSize="small" />
+                    </IconButton>
+                    {isAdmin && (
+                      <IconButton
+                        size="small"
+                        onClick={() => handleDelete(facture)}
+                        sx={{ color: '#ef4444', '&:hover': { background: 'rgba(239,68,68,0.1)' } }}
+                      >
+                        <Delete fontSize="small" />
+                      </IconButton>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* ── Archive Modal ── */}
+      <ArchiveModal
+        open={archiveOpen}
+        onClose={() => setArchiveOpen(false)}
+        factures={factures}
+        clients={clients}
+        parametres={parametres}
+      />
     </Box>
   );
 };

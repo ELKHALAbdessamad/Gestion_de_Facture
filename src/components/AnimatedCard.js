@@ -15,13 +15,14 @@ export const AnimatedCard = ({ children, delay = 0, ...props }) => {
       { threshold: 0.1 }
     );
 
-    if (cardRef.current) {
-      observer.observe(cardRef.current);
+    const current = cardRef.current;
+    if (current) {
+      observer.observe(current);
     }
 
     return () => {
-      if (cardRef.current) {
-        observer.unobserve(cardRef.current);
+      if (current) {
+        observer.unobserve(current);
       }
     };
   }, [delay]);
@@ -42,24 +43,25 @@ export const AnimatedCard = ({ children, delay = 0, ...props }) => {
   );
 };
 
-export const Card3D = ({ children, ...props }) => {
+export const Card3D = ({ children, disableTilt = false, ...props }) => {
   const cardRef = useRef(null);
   const [rotation, setRotation] = useState({ x: 0, y: 0 });
 
   const handleMouseMove = (e) => {
-    if (!cardRef.current) return;
-    
+    if (disableTilt || !cardRef.current) return;
+
     const card = cardRef.current;
     const rect = card.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
+
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
-    
-    const rotateX = (y - centerY) / 10;
-    const rotateY = (centerX - x) / 10;
-    
+
+    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+    const rotateX = clamp((y - centerY) / 25, -4, 4);
+    const rotateY = clamp((centerX - x) / 25, -4, 4);
+
     setRotation({ x: rotateX, y: rotateY });
   };
 
@@ -73,9 +75,12 @@ export const Card3D = ({ children, ...props }) => {
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       sx={{
-        transform: `perspective(1000px) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`,
-        transition: 'transform 0.1s ease-out',
-        transformStyle: 'preserve-3d',
+        transform: disableTilt
+          ? 'none'
+          : `perspective(1000px) rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`,
+        transition: 'transform 0.15s ease-out',
+        transformStyle: disableTilt ? 'flat' : 'preserve-3d',
+        willChange: disableTilt ? 'auto' : 'transform',
         ...props.sx
       }}
       {...props}

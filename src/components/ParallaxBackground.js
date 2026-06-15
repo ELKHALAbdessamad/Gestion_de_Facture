@@ -1,20 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { Box } from '@mui/material';
 
-export const ParallaxBackground = ({ children }) => {
+export const ParallaxBackground = ({ children, lockScroll = false }) => {
   const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
+    if (lockScroll) return undefined;
+
     const handleScroll = () => {
       setScrollY(window.scrollY);
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [lockScroll]);
 
   return (
-    <Box sx={{ position: 'relative', overflow: 'hidden' }}>
+    <Box sx={{
+      position: 'relative',
+      overflow: lockScroll ? 'hidden' : 'visible',
+      ...(lockScroll && { minHeight: '100vh', height: '100vh' }),
+    }}>
       {/* Animated Background Layers */}
       <Box
         sx={{
@@ -34,7 +40,7 @@ export const ParallaxBackground = ({ children }) => {
             top: `${-scrollY * 0.5}px`,
             left: 0,
             right: 0,
-            height: '200vh',
+            height: lockScroll ? '100vh' : '200vh',
             background: 'radial-gradient(circle at 20% 50%, rgba(212, 168, 83, 0.15) 0%, transparent 50%)',
             opacity: 0.5,
           }}
@@ -47,7 +53,7 @@ export const ParallaxBackground = ({ children }) => {
             top: `${-scrollY * 0.3}px`,
             left: 0,
             right: 0,
-            height: '200vh',
+            height: lockScroll ? '100vh' : '200vh',
             background: 'radial-gradient(circle at 80% 80%, rgba(244, 208, 63, 0.1) 0%, transparent 50%)',
             opacity: 0.5,
           }}

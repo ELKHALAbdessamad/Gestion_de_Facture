@@ -1,6 +1,8 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { AuthProvider } from './contexts/AuthContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { PrivateRoute } from './routes/PrivateRoute';
@@ -90,6 +92,17 @@ function App() {
     <LanguageProvider>
       <ThemeProvider theme={theme}>
         <CssBaseline />
+        <ToastContainer
+          position="top-right"
+          autoClose={4000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          pauseOnHover
+          draggable
+          theme="dark"
+          style={{ zIndex: 9999 }}
+        />
         <AuthProvider>
           <Router>
           <Routes>
@@ -149,7 +162,7 @@ function App() {
             <Route
               path="/clients"
               element={
-                <PrivateRoute adminOnly>
+                <PrivateRoute>
                   <Layout>
                     <Clients />
                   </Layout>

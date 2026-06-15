@@ -131,6 +131,8 @@ export const translations = {
         admin: 'Admin',
         user: 'User',
         backHome: '← Retour à l\'accueil',
+        noAccount: 'Pas encore de compte ?',
+        registerLink: 'Créer un compte',
       },
       register: {
         title: 'Créer un compte',
@@ -503,6 +505,8 @@ export const translations = {
         admin: 'Admin',
         user: 'User',
         backHome: '← Back to Home',
+        noAccount: 'Don\'t have an account?',
+        registerLink: 'Create an account',
       },
       register: {
         title: 'Create Account',

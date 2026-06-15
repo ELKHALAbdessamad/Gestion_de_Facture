@@ -1,0 +1,52 @@
+@startuml sequence_auth
+title DS-01 : Diagramme de Séquence — Authentification
+
+skinparam backgroundColor #FEFEFE
+skinparam sequenceArrowColor #2E86C1
+skinparam sequenceParticipantBackgroundColor #D4E6F1
+skinparam sequenceParticipantBorderColor #2E86C1
+
+actor "Utilisateur" as User
+participant "Login.js\n(Composant)" as Login
+participant "AuthContext\n(Contexte)" as Auth
+participant "demoAuthService\n(Service)" as DemoAuth
+database "localStorage\n(Navigateur)" as Local
+participant "React Router\n(Navigation)" as Router
+
+User -> Login : Saisie email + password
+User -> Login : Clic "Se connecter"
+Login -> Auth : login(email, password)
+Auth -> DemoAuth : verifyCredentials(email, password)
+
+DemoAuth -> DemoAuth : Recherche dans DEMO_USERS[]
+
+alt Credentials valides
+  DemoAuth --> Auth : { success: true, user: {email, role} }
+  Auth -> Local : setItem('currentUser', JSON.stringify(user))
+  Auth -> Auth : setCurrentUser(user)
+  Auth -> Auth : setIsAdmin(role === 'ADMIN')
+  Auth --> Login : { success: true }
+  Login -> Router : navigate('/') [Dashboard]
+  Router --> User : Affichage Dashboard
+
+else Credentials invalides
+  DemoAuth --> Auth : { success: false }
+  Auth --> Login : { success: false, error: 'Identifiants invalides' }
+  Login -> Login : setError(message)
+  Login --> User : Affichage message d'erreur
+end
+
+note right of Local
+  Session persistée entre
+  les rechargements de page
+  (pas de cookie sécurisé en V1)
+end note
+
+note right of DemoAuth
+  Comptes de démo :
+  admin@test.com / admin123
+  user@test.com / user123
+  (V2 : Firebase Auth sécurisée)
+end note
+
+@enduml

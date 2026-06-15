@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -29,6 +29,17 @@ export const Login = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
 
+  useEffect(() => {
+    const prevHtml = document.documentElement.style.overflow;
+    const prevBody = document.body.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.documentElement.style.overflow = prevHtml;
+      document.body.style.overflow = prevBody;
+    };
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -45,7 +56,7 @@ export const Login = () => {
       }, 100);
     } catch (err) {
       console.error('Erreur de connexion:', err);
-      setError(t('auth.login.error'));
+      setError(err.message || t('auth.login.error'));
       setLoading(false);
     }
   };
@@ -73,15 +84,17 @@ export const Login = () => {
   };
 
   return (
-    <ParallaxBackground>
+    <ParallaxBackground lockScroll>
       <Box
         sx={{
           minHeight: '100vh',
+          height: '100vh',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           py: 4,
           position: 'relative',
+          overflow: 'hidden',
         }}
       >
         <Container maxWidth="sm">
@@ -90,10 +103,9 @@ export const Login = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <Card3D>
+            <Card3D disableTilt>
               <Paper 
                 elevation={0}
-                className="bento-card"
                 sx={{ 
                   p: 5, 
                   borderRadius: 4,
@@ -102,7 +114,11 @@ export const Login = () => {
                   border: '1px solid rgba(255, 255, 255, 0.1)',
                   position: 'relative',
                   overflow: 'hidden',
-                  zIndex: 1
+                  zIndex: 1,
+                  '&:hover': {
+                    transform: 'none',
+                    boxShadow: 'none',
+                  },
                 }}
               >
                 {/* Animated background gradient */}
@@ -292,6 +308,29 @@ export const Login = () => {
                     </motion.div>
                   </motion.div>
                 </form>
+
+                <Box textAlign="center" mt={2}>
+                  <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                    {t('auth.login.noAccount')}{' '}
+                    <Button
+                      onClick={() => navigate('/register')}
+                      sx={{
+                        color: '#D4A853',
+                        textTransform: 'none',
+                        fontWeight: 700,
+                        p: 0,
+                        minWidth: 'auto',
+                        verticalAlign: 'baseline',
+                        '&:hover': {
+                          background: 'transparent',
+                          textDecoration: 'underline',
+                        },
+                      }}
+                    >
+                      {t('auth.login.registerLink')}
+                    </Button>
+                  </Typography>
+                </Box>
                 
                 <Divider sx={{ my: 4, borderColor: 'rgba(255, 255, 255, 0.1)' }}>
                   <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', px: 2 }}>
@@ -341,8 +380,6 @@ export const Login = () => {
                               '&:hover': {
                                 background: 'rgba(255, 255, 255, 0.05)',
                                 border: `1px solid ${account.color}50`,
-                                transform: 'translateY(-2px)',
-                                boxShadow: `0 8px 16px ${account.color}30`,
                               }
                             }}
                           >

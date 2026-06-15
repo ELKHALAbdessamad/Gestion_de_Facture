@@ -147,14 +147,22 @@ Les factures PDF incluent:
 - **Forms**: Formik + Yup
 - **HTTP**: Axios
 
-## 📈 Évolutions futures
+## ⚠️ Limites (nécessitent un backend serveur)
 
-- Export Excel
-- Envoi de factures par email
-- Gestion multi-devise
-- Multi-société
-- Signature électronique
-- Archivage annuel
+| Point | Note |
+|-------|------|
+| Envoi email automatique sans intervention | Utilise `mailto:` (ou EmailJS optionnel) — suffisant pour démo PFA |
+| JWT réel | `localStorage` démo — Firebase Auth activable |
+| Archivage annuel | Besoin stockage cloud supplémentaire |
+| Multi-devise / Multi-société | Architecture future V2 |
+
+## 📈 Évolutions futures (V2)
+
+- Backend SMTP pour envoi email automatique
+- Firebase Auth avec JWT réel
+- Archivage légal cloud (10 ans)
+- Multi-devise avec taux de change et consolidation multi-société
+- Application mobile native
 
 ## 🐛 Dépannage
 

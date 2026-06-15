@@ -22,15 +22,14 @@ import {
   TrendingDown, 
   Receipt, 
   People, 
-  Description,
   Assessment,
   ArrowForward,
   Add
 } from '@mui/icons-material';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { getFactures, getClients } from '../services/firebaseService';
+import { notify } from '../services/notificationService';
 import { useAuth } from '../contexts/AuthContext';
-import { LordIcon, Icons } from '../components/LordIcon';
 import { AnimatedCard, Card3D } from '../components/AnimatedCard';
 
 export const Dashboard = () => {
@@ -41,6 +40,9 @@ export const Dashboard = () => {
     outstanding: 0,
     invoicesSent: 0,
     activeClients: 0,
+    rejectedInvoices: 0,
+    rejectedAmount: 0,
+    averageInvoice: 0,
     revenueChange: 12.4,
     outstandingChange: -3.1,
     invoicesChange: 8,
@@ -50,44 +52,88 @@ export const Dashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const calculateStats = (facturesData, clientsData) => {
+      const totalRevenue = facturesData
+        .filter(f => f.statut === 'Payée')
+        .reduce((sum, f) => sum + (f.total_ttc || 0), 0);
+
+      const outstanding = facturesData
+        .filter(f => f.statut === 'En attente')
+        .reduce((sum, f) => sum + (f.total_ttc || 0), 0);
+
+      const rejectedInvoices = facturesData.filter(f => f.statut === 'Rejetée').length;
+      const rejectedAmount = facturesData
+        .filter(f => f.statut === 'Rejetée')
+        .reduce((sum, f) => sum + (f.total_ttc || 0), 0);
+
+      const averageInvoice = facturesData.length > 0
+        ? facturesData.reduce((sum, f) => sum + (f.total_ttc || 0), 0) / facturesData.length
+        : 0;
+
+      setStats({
+        totalRevenue,
+        outstanding,
+        invoicesSent: facturesData.length,
+        activeClients: clientsData.length,
+        rejectedInvoices,
+        rejectedAmount,
+        averageInvoice,
+        revenueChange: 12.4,
+        outstandingChange: -3.1,
+        invoicesChange: 8,
+        clientsChange: 2
+      });
+    };
+
+    const loadData = async () => {
+      const [facturesData, clientsData] = await Promise.all([
+        getFactures(),
+        getClients()
+      ]);
+      setFactures(facturesData);
+      setClients(clientsData);
+      calculateStats(facturesData, clientsData);
+
+      const today = new Date();
+      facturesData
+        .filter(f => f.statut === 'En attente' && f.date_echeance)
+        .forEach(f => {
+          const diff = Math.ceil(
+            (new Date(f.date_echeance) - today) / (1000 * 60 * 60 * 24)
+          );
+          if (diff >= 0 && diff <= 3) {
+            notify.echeaniceProche(f.numero, diff);
+          }
+        });
+    };
+
     loadData();
   }, []);
-
-  const loadData = async () => {
-    const [facturesData, clientsData] = await Promise.all([
-      getFactures(),
-      getClients()
-    ]);
-    setFactures(facturesData);
-    setClients(clientsData);
-    calculateStats(facturesData, clientsData);
-  };
-
-  const calculateStats = (facturesData, clientsData) => {
-    const totalRevenue = facturesData
-      .filter(f => f.statut === 'Payée')
-      .reduce((sum, f) => sum + (f.total_ttc || 0), 0);
-    
-    const outstanding = facturesData
-      .filter(f => f.statut === 'En attente')
-      .reduce((sum, f) => sum + (f.total_ttc || 0), 0);
-
-    setStats({
-      totalRevenue,
-      outstanding,
-      invoicesSent: facturesData.length,
-      activeClients: clientsData.length,
-      revenueChange: 12.4,
-      outstandingChange: -3.1,
-      invoicesChange: 8,
-      clientsChange: 2
-    });
-  };
 
   const getRecentInvoices = () => {
     return factures
       .sort((a, b) => new Date(b.date_creation) - new Date(a.date_creation))
       .slice(0, 5);
+  };
+
+  const getMonthlyRevenue = () => {
+    const monthlyData = {};
+    factures.forEach(f => {
+      if (f.statut === 'Payée' && f.date_creation) {
+        const date = new Date(f.date_creation);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const monthLabel = date.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+        
+        if (!monthlyData[monthKey]) {
+          monthlyData[monthKey] = { month: monthLabel, revenue: 0 };
+        }
+        monthlyData[monthKey].revenue += f.total_ttc || 0;
+      }
+    });
+    
+    return Object.values(monthlyData)
+      .sort((a, b) => a.month.localeCompare(b.month))
+      .slice(-6); // Last 6 months
   };
 
   const getClientName = (clientId) => {
@@ -233,10 +279,9 @@ export const Dashboard = () => {
                 }
               }}
             >
-              New Invoice
+              Nouvelle Facture
             </Button>
-            {isAdmin && (
-              <Avatar 
+            <Avatar 
                 sx={{ 
                   width: 40, 
                   height: 40,
@@ -255,7 +300,7 @@ export const Dashboard = () => {
 
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={2.4}>
           <StatCard
             title="Total Revenue"
             value={`€${stats.totalRevenue.toLocaleString()}`}
@@ -264,7 +309,7 @@ export const Dashboard = () => {
             delay={0}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={2.4}>
           <StatCard
             title="Outstanding"
             value={`€${stats.outstanding.toLocaleString()}`}
@@ -273,7 +318,7 @@ export const Dashboard = () => {
             delay={100}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={2.4}>
           <StatCard
             title="Invoices Sent"
             value={stats.invoicesSent}
@@ -282,19 +327,56 @@ export const Dashboard = () => {
             delay={200}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={2.4}>
+          <StatCard
+            title="Average Invoice"
+            value={`€${stats.averageInvoice.toLocaleString(undefined, {maximumFractionDigits: 0})}`}
+            change={5.2}
+            icon={Assessment}
+            delay={300}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={2.4}>
           <StatCard
             title="Active Clients"
             value={stats.activeClients}
             change={stats.clientsChange}
             icon={People}
-            delay={300}
+            delay={400}
           />
         </Grid>
       </Grid>
 
       {/* Main Content */}
       <Grid container spacing={3}>
+        {/* Monthly Revenue Chart */}
+        <Grid item xs={12}>
+          <AnimatedCard delay={350}>
+            <Card3D>
+              <Paper className="bento-card" sx={{ p: 3, borderRadius: 3 }}>
+                <Typography variant="h6" sx={{ fontWeight: 700, color: '#fff', mb: 3 }}>
+                  Chiffre d'Affaires Mensuel
+                </Typography>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={getMonthlyRevenue()}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                    <XAxis dataKey="month" stroke="rgba(255,255,255,0.5)" />
+                    <YAxis stroke="rgba(255,255,255,0.5)" />
+                    <Tooltip 
+                      contentStyle={{ 
+                        background: 'rgba(8, 8, 7, 0.95)', 
+                        border: '1px solid rgba(212, 168, 83, 0.3)',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Bar dataKey="revenue" fill="#D4A853" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Paper>
+            </Card3D>
+          </AnimatedCard>
+        </Grid>
+
         {/* Recent Invoices */}
         <Grid item xs={12} md={8}>
           <AnimatedCard delay={400}>

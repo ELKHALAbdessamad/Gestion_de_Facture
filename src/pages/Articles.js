@@ -1,67 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
-  Button,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Typography,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  IconButton,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem
+  Box, Button, Paper, Table, TableBody, TableCell,
+  TableContainer, TableHead, TableRow, Typography,
+  Dialog, DialogTitle, DialogContent, DialogActions,
+  TextField, IconButton, FormControl, InputLabel, Select, MenuItem, Chip
 } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { getArticles, addArticle, updateArticle, deleteArticle, getCategories } from '../services/jsonService';
+import { notify } from '../services/notificationService';
 import { LordIcon, Icons } from '../components/LordIcon';
 
 export const Articles = () => {
-  const [articles, setArticles] = useState([]);
+  const [articles, setArticles]   = useState([]);
   const [categories, setCategories] = useState([]);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen]           = useState(false);
   const [editingArticle, setEditingArticle] = useState(null);
-  const [formData, setFormData] = useState({
-    designation: '',
-    prix_unitaire: 0,
-    categorie_id: ''
-  });
+  const [formData, setFormData]   = useState({ designation: '', prix_unitaire: 0, categorie_id: '' });
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
-    const [articlesData, categoriesData] = await Promise.all([
-      getArticles(),
-      getCategories()
-    ]);
-    setArticles(articlesData);
-    setCategories(categoriesData);
+    const [a, c] = await Promise.all([getArticles(), getCategories()]);
+    setArticles(a);
+    setCategories(c);
   };
 
-  const getCategoryName = (catId) => {
-    const cat = categories.find(c => c.id === catId);
-    return cat ? cat.nom : '';
-  };
+  const getCategoryName = (catId) => categories.find(c => c.id === catId)?.nom || '—';
+  const getTVA = (catId) => categories.find(c => c.id === catId)?.tva ?? '—';
 
   const handleOpen = (article = null) => {
     if (article) {
       setEditingArticle(article);
-      setFormData({
-        designation: article.designation,
-        prix_unitaire: article.prix_unitaire,
-        categorie_id: article.categorie_id
-      });
+      setFormData({ designation: article.designation, prix_unitaire: article.prix_unitaire, categorie_id: article.categorie_id });
     } else {
       setEditingArticle(null);
       setFormData({ designation: '', prix_unitaire: 0, categorie_id: '' });
@@ -69,98 +39,96 @@ export const Articles = () => {
     setOpen(true);
   };
 
-  const handleClose = () => {
-    setOpen(false);
-    setEditingArticle(null);
-  };
+  const handleClose = () => { setOpen(false); setEditingArticle(null); };
 
   const handleSubmit = async () => {
     if (editingArticle) {
       await updateArticle(editingArticle.id, formData);
+      notify.articleCree(formData.designation); // réutilise même message
     } else {
       await addArticle(formData);
+      notify.articleCree(formData.designation);
     }
     handleClose();
     loadData();
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer cet article ?')) {
-      await deleteArticle(id);
+  const handleDelete = async (article) => {
+    if (window.confirm(`Supprimer l'article "${article.designation}" ?`)) {
+      await deleteArticle(article.id);
+      notify.articleSupprime(article.designation);
       loadData();
     }
   };
 
+  const inputSx = { '& .MuiOutlinedInput-root': { borderRadius: 2 } };
+
   return (
     <Box className="fade-in-up">
+      {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
         <Box display="flex" alignItems="center" gap={2}>
-          <LordIcon 
-            src={Icons.settings}
-            trigger="loop"
-            size={48}
-            colors="primary:#D4A853"
-          />
-          <Typography variant="h4" sx={{ fontWeight: 800, color: '#fff' }}>
-            Gestion des Articles
-          </Typography>
+          <LordIcon src={Icons.settings} trigger="loop" size={48} colors="primary:#D4A853" />
+          <Box>
+            <Typography variant="h4" fontWeight={800} sx={{ color: '#fff' }}>
+              Gestion des Articles
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)' }}>
+              {articles.length} article{articles.length > 1 ? 's' : ''} au catalogue
+            </Typography>
+          </Box>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={() => handleOpen()}
-          sx={{
-            borderRadius: 2,
-            px: 3,
-            py: 1.5,
-            fontWeight: 700
-          }}
-        >
+        <Button variant="contained" startIcon={<Add />} onClick={() => handleOpen()}
+          sx={{ borderRadius: 2, px: 3, py: 1.5, fontWeight: 700 }}>
           Nouvel Article
         </Button>
       </Box>
 
+      {/* Table */}
       <TableContainer component={Paper} className="bento-card" sx={{ borderRadius: 3 }}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.875rem', letterSpacing: 1 }}>Désignation</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.875rem', letterSpacing: 1 }}>Prix Unitaire</TableCell>
-              <TableCell sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.875rem', letterSpacing: 1 }}>Catégorie</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.875rem', letterSpacing: 1 }}>Actions</TableCell>
+              {['Désignation', 'Prix Unitaire', 'Catégorie', 'TVA', 'Actions'].map(h => (
+                <TableCell key={h}
+                  align={h === 'Prix Unitaire' || h === 'Actions' ? 'right' : 'left'}
+                  sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.75rem',
+                        letterSpacing: 1, color: 'rgba(255,255,255,0.6)' }}>
+                  {h}
+                </TableCell>
+              ))}
             </TableRow>
           </TableHead>
           <TableBody>
-            {articles.map((article) => (
-              <TableRow 
-                key={article.id}
-                sx={{
-                  '&:hover': {
-                    background: 'rgba(255, 255, 255, 0.03)'
-                  }
-                }}
-              >
-                <TableCell sx={{ fontWeight: 600 }}>{article.designation}</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 600 }}>{article.prix_unitaire.toFixed(2)} €</TableCell>
-                <TableCell>{getCategoryName(article.categorie_id)}</TableCell>
+            {articles.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} align="center" sx={{ py: 4, color: 'rgba(255,255,255,0.4)' }}>
+                  Aucun article — cliquez sur "Nouvel Article" pour commencer
+                </TableCell>
+              </TableRow>
+            ) : articles.map(article => (
+              <TableRow key={article.id}
+                sx={{ '&:hover': { background: 'rgba(255,255,255,0.03)' } }}>
+                <TableCell sx={{ fontWeight: 600, color: '#fff' }}>{article.designation}</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, color: '#D4A853' }}>
+                  {Number(article.prix_unitaire).toFixed(2)} MAD
+                </TableCell>
+                <TableCell sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                  {getCategoryName(article.categorie_id)}
+                </TableCell>
+                <TableCell>
+                  <Chip label={`${getTVA(article.categorie_id)}%`} size="small"
+                    sx={{ background: 'rgba(212,168,83,0.15)', color: '#D4A853',
+                          border: '1px solid rgba(212,168,83,0.3)', fontWeight: 700 }} />
+                </TableCell>
                 <TableCell align="right">
-                  <IconButton 
-                    onClick={() => handleOpen(article)} 
-                    sx={{ 
-                      color: '#60a5fa',
-                      '&:hover': { background: 'rgba(96, 165, 250, 0.1)' }
-                    }}
-                  >
-                    <Edit />
+                  <IconButton size="small" onClick={() => handleOpen(article)}
+                    sx={{ color: '#60a5fa', '&:hover': { background: 'rgba(96,165,250,0.1)' } }}>
+                    <Edit fontSize="small" />
                   </IconButton>
-                  <IconButton 
-                    onClick={() => handleDelete(article.id)} 
-                    sx={{ 
-                      color: '#ef4444',
-                      '&:hover': { background: 'rgba(239, 68, 68, 0.1)' }
-                    }}
-                  >
-                    <Delete />
+                  <IconButton size="small" onClick={() => handleDelete(article)}
+                    sx={{ color: '#ef4444', '&:hover': { background: 'rgba(239,68,68,0.1)' } }}>
+                    <Delete fontSize="small" />
                   </IconButton>
                 </TableCell>
               </TableRow>
@@ -169,66 +137,39 @@ export const Articles = () => {
         </Table>
       </TableContainer>
 
-      <Dialog 
-        open={open} 
-        onClose={handleClose} 
-        maxWidth="sm" 
-        fullWidth
-        PaperProps={{
-          className: 'bento-card',
-          sx: { borderRadius: 3 }
-        }}
-      >
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.5rem' }}>
-          {editingArticle ? 'Modifier l\'Article' : 'Nouvel Article'}
+      {/* Dialog */}
+      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth
+        PaperProps={{ className: 'bento-card', sx: { borderRadius: 3, background: 'rgba(8,8,7,0.97)' } }}>
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.4rem', color: '#fff' }}>
+          {editingArticle ? "Modifier l'Article" : 'Nouvel Article'}
         </DialogTitle>
         <DialogContent>
-          <TextField
-            fullWidth
-            label="Désignation"
-            value={formData.designation}
-            onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
-            margin="normal"
-            required
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-          />
-          <TextField
-            fullWidth
-            label="Prix Unitaire"
-            type="number"
-            value={formData.prix_unitaire}
-            onChange={(e) => setFormData({ ...formData, prix_unitaire: parseFloat(e.target.value) })}
-            margin="normal"
-            required
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-          />
+          <TextField fullWidth label="Désignation" value={formData.designation}
+            onChange={e => setFormData({ ...formData, designation: e.target.value })}
+            margin="normal" required sx={inputSx} />
+          <TextField fullWidth label="Prix Unitaire (MAD)" type="number" value={formData.prix_unitaire}
+            onChange={e => setFormData({ ...formData, prix_unitaire: parseFloat(e.target.value) || 0 })}
+            margin="normal" required sx={inputSx} />
           <FormControl fullWidth margin="normal" required>
             <InputLabel>Catégorie</InputLabel>
-            <Select
-              value={formData.categorie_id}
-              onChange={(e) => setFormData({ ...formData, categorie_id: e.target.value })}
-              sx={{ borderRadius: 2 }}
-            >
+            <Select value={formData.categorie_id}
+              onChange={e => setFormData({ ...formData, categorie_id: e.target.value })}
+              sx={{ borderRadius: 2 }}>
               {categories.map(cat => (
                 <MenuItem key={cat.id} value={cat.id}>
-                  {cat.nom} (TVA: {cat.tva}%)
+                  {cat.nom} — TVA {cat.tva}%
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
         </DialogContent>
-        <DialogActions sx={{ p: 3 }}>
-          <Button 
-            onClick={handleClose}
-            sx={{ borderRadius: 2, px: 3 }}
-          >
+        <DialogActions sx={{ p: 3, gap: 1 }}>
+          <Button onClick={handleClose}
+            sx={{ borderRadius: 2, px: 3, color: 'rgba(255,255,255,0.7)' }}>
             Annuler
           </Button>
-          <Button 
-            onClick={handleSubmit} 
-            variant="contained"
-            sx={{ borderRadius: 2, px: 3, fontWeight: 700 }}
-          >
+          <Button onClick={handleSubmit} variant="contained"
+            sx={{ borderRadius: 2, px: 3, fontWeight: 700 }}>
             {editingArticle ? 'Modifier' : 'Créer'}
           </Button>
         </DialogActions>

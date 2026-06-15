@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -16,10 +16,12 @@ import {
   StepLabel
 } from '@mui/material';
 import { Visibility, VisibilityOff, Email, Lock, Person, Business } from '@mui/icons-material';
+import { registerUser } from '../services/firebaseService';
 import { LordIcon, Icons } from '../components/LordIcon';
 import { AnimatedInput } from '../components/AnimatedInput';
 import { Card3D } from '../components/AnimatedCard';
 import { ParallaxBackground } from '../components/ParallaxBackground';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export const Register = () => {
   const [activeStep, setActiveStep] = useState(0);
@@ -35,17 +37,37 @@ export const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
-  const steps = ['Informations personnelles', 'Informations entreprise', 'Confirmation'];
+  const steps = [
+    t('auth.register.steps.personal'),
+    t('auth.register.steps.company'),
+    t('auth.register.steps.confirmation'),
+  ];
+
+  useEffect(() => {
+    const prevHtml = document.documentElement.style.overflow;
+    const prevBody = document.body.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.documentElement.style.overflow = prevHtml;
+      document.body.style.overflow = prevBody;
+    };
+  }, []);
 
   const handleNext = () => {
     if (activeStep === 0) {
       if (!formData.nom || !formData.email || !formData.password) {
-        setError('Veuillez remplir tous les champs');
+        setError(t('auth.register.errors.fillAll'));
         return;
       }
       if (formData.password !== formData.confirmPassword) {
-        setError('Les mots de passe ne correspondent pas');
+        setError(t('auth.register.errors.passwordMismatch'));
+        return;
+      }
+      if (formData.password.length < 6) {
+        setError('Le mot de passe doit contenir au moins 6 caractères');
         return;
       }
     }
@@ -54,6 +76,7 @@ export const Register = () => {
   };
 
   const handleBack = () => {
+    setError('');
     setActiveStep((prev) => prev - 1);
   };
 
@@ -61,16 +84,19 @@ export const Register = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    
+
     try {
-      // Simulation de création de compte
-      setTimeout(() => {
-        console.log('Compte créé:', formData);
-        navigate('/login');
-      }, 1500);
+      await registerUser({
+        email: formData.email.trim(),
+        password: formData.password,
+        nom: formData.nom.trim(),
+        entreprise: formData.entreprise.trim(),
+        telephone: formData.telephone.trim(),
+      });
+      navigate('/dashboard');
     } catch (err) {
       console.error('Erreur de création:', err);
-      setError('Erreur lors de la création du compte');
+      setError(err.message || 'Erreur lors de la création du compte');
       setLoading(false);
     }
   };
@@ -81,14 +107,14 @@ export const Register = () => {
         return (
           <>
             <AnimatedInput
-              label="Nom complet"
+              label={t('auth.register.fields.fullName')}
               value={formData.nom}
               onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
               required
               icon={<Person />}
             />
             <AnimatedInput
-              label="Email"
+              label={t('auth.register.fields.email')}
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -96,7 +122,7 @@ export const Register = () => {
               icon={<Email />}
             />
             <AnimatedInput
-              label="Mot de passe"
+              label={t('auth.register.fields.password')}
               type={showPassword ? 'text' : 'password'}
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -117,7 +143,7 @@ export const Register = () => {
               }}
             />
             <AnimatedInput
-              label="Confirmer le mot de passe"
+              label={t('auth.register.fields.confirmPassword')}
               type={showPassword ? 'text' : 'password'}
               value={formData.confirmPassword}
               onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
@@ -130,14 +156,13 @@ export const Register = () => {
         return (
           <>
             <AnimatedInput
-              label="Nom de l'entreprise"
+              label={t('auth.register.fields.company')}
               value={formData.entreprise}
               onChange={(e) => setFormData({ ...formData, entreprise: e.target.value })}
-              required
               icon={<Business />}
             />
             <AnimatedInput
-              label="Téléphone"
+              label={t('auth.register.fields.phone')}
               value={formData.telephone}
               onChange={(e) => setFormData({ ...formData, telephone: e.target.value })}
               icon={<Person />}
@@ -148,11 +173,11 @@ export const Register = () => {
         return (
           <Box sx={{ py: 3 }}>
             <Typography variant="h6" sx={{ color: '#D4A853', mb: 3, fontWeight: 700 }}>
-              Récapitulatif
+              {t('auth.register.summary.title')}
             </Typography>
             <Box sx={{ mb: 2 }}>
               <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-                Nom
+                {t('auth.register.summary.name')}
               </Typography>
               <Typography variant="body1" sx={{ color: '#fff', fontWeight: 600 }}>
                 {formData.nom}
@@ -160,7 +185,7 @@ export const Register = () => {
             </Box>
             <Box sx={{ mb: 2 }}>
               <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-                Email
+                {t('auth.register.summary.email')}
               </Typography>
               <Typography variant="body1" sx={{ color: '#fff', fontWeight: 600 }}>
                 {formData.email}
@@ -168,10 +193,10 @@ export const Register = () => {
             </Box>
             <Box sx={{ mb: 2 }}>
               <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-                Entreprise
+                {t('auth.register.summary.company')}
               </Typography>
               <Typography variant="body1" sx={{ color: '#fff', fontWeight: 600 }}>
-                {formData.entreprise || 'Non renseigné'}
+                {formData.entreprise || t('auth.register.summary.notProvided')}
               </Typography>
             </Box>
           </Box>
@@ -182,14 +207,17 @@ export const Register = () => {
   };
 
   return (
-    <ParallaxBackground>
+    <ParallaxBackground lockScroll>
       <Box
         sx={{
           minHeight: '100vh',
+          height: '100vh',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           py: 4,
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
         <Container maxWidth="md">
@@ -198,25 +226,30 @@ export const Register = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <Card3D>
-              <Paper 
+            <Card3D disableTilt>
+              <Paper
                 elevation={0}
-                className="bento-card"
-                sx={{ 
-                  p: 5, 
+                sx={{
+                  p: 5,
                   borderRadius: 4,
                   background: 'rgba(255, 255, 255, 0.03)',
                   backdropFilter: 'blur(20px)',
                   border: '1px solid rgba(255, 255, 255, 0.1)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  zIndex: 1,
+                  '&:hover': {
+                    transform: 'none',
+                    boxShadow: 'none',
+                  },
                 }}
               >
-                {/* Logo */}
                 <Box display="flex" justifyContent="center" mb={3}>
                   <motion.div
                     animate={{ rotate: [0, 360] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
                   >
-                    <LordIcon 
+                    <LordIcon
                       src={Icons.invoice}
                       trigger="loop"
                       size={80}
@@ -225,30 +258,22 @@ export const Register = () => {
                   </motion.div>
                 </Box>
 
-                <Typography 
-                  variant="h3" 
-                  align="center" 
-                  sx={{
-                    fontWeight: 800,
-                    color: '#fff',
-                    mb: 1
-                  }}
+                <Typography
+                  variant="h3"
+                  align="center"
+                  sx={{ fontWeight: 800, color: '#fff', mb: 1 }}
                 >
-                  Créer un compte
-                </Typography>
-                
-                <Typography 
-                  variant="body1" 
-                  align="center" 
-                  sx={{ 
-                    color: 'rgba(255, 255, 255, 0.6)',
-                    mb: 4
-                  }}
-                >
-                  Rejoignez des milliers d'entrepreneurs satisfaits
+                  {t('auth.register.title')}
                 </Typography>
 
-                {/* Stepper */}
+                <Typography
+                  variant="body1"
+                  align="center"
+                  sx={{ color: 'rgba(255, 255, 255, 0.6)', mb: 4 }}
+                >
+                  {t('auth.register.subtitle')}
+                </Typography>
+
                 <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
                   {steps.map((label) => (
                     <Step key={label}>
@@ -256,21 +281,13 @@ export const Register = () => {
                         sx={{
                           '& .MuiStepLabel-label': {
                             color: 'rgba(255, 255, 255, 0.5)',
-                            '&.Mui-active': {
-                              color: '#D4A853',
-                            },
-                            '&.Mui-completed': {
-                              color: '#4ade80',
-                            },
+                            '&.Mui-active': { color: '#D4A853' },
+                            '&.Mui-completed': { color: '#4ade80' },
                           },
                           '& .MuiStepIcon-root': {
                             color: 'rgba(255, 255, 255, 0.2)',
-                            '&.Mui-active': {
-                              color: '#D4A853',
-                            },
-                            '&.Mui-completed': {
-                              color: '#4ade80',
-                            },
+                            '&.Mui-active': { color: '#D4A853' },
+                            '&.Mui-completed': { color: '#4ade80' },
                           },
                         }}
                       >
@@ -279,16 +296,13 @@ export const Register = () => {
                     </Step>
                   ))}
                 </Stepper>
-                
+
                 {error && (
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                  >
-                    <Alert 
-                      severity="error" 
-                      sx={{ 
-                        mb: 3, 
+                  <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+                    <Alert
+                      severity="error"
+                      sx={{
+                        mb: 3,
                         borderRadius: 2,
                         background: 'rgba(239, 68, 68, 0.1)',
                         border: '1px solid rgba(239, 68, 68, 0.3)',
@@ -298,13 +312,14 @@ export const Register = () => {
                     </Alert>
                   </motion.div>
                 )}
-                
+
                 <form onSubmit={handleSubmit}>
                   {renderStepContent(activeStep)}
-                  
+
                   <Box display="flex" gap={2} mt={4}>
                     {activeStep > 0 && (
                       <Button
+                        type="button"
                         onClick={handleBack}
                         sx={{
                           flex: 1,
@@ -313,17 +328,16 @@ export const Register = () => {
                           color: '#fff',
                           border: '1px solid rgba(255, 255, 255, 0.2)',
                           fontWeight: 600,
-                          '&:hover': {
-                            background: 'rgba(255, 255, 255, 0.05)',
-                          }
+                          '&:hover': { background: 'rgba(255, 255, 255, 0.05)' },
                         }}
                       >
-                        Retour
+                        {t('auth.register.buttons.back')}
                       </Button>
                     )}
-                    
+
                     {activeStep < steps.length - 1 ? (
                       <Button
+                        type="button"
                         onClick={handleNext}
                         variant="contained"
                         sx={{
@@ -335,10 +349,10 @@ export const Register = () => {
                           fontWeight: 700,
                           '&:hover': {
                             background: 'linear-gradient(135deg, #F4D03F 0%, #D4A853 100%)',
-                          }
+                          },
                         }}
                       >
-                        Suivant
+                        {t('auth.register.buttons.next')}
                       </Button>
                     ) : (
                       <Button
@@ -354,32 +368,30 @@ export const Register = () => {
                           fontWeight: 700,
                           '&:hover': {
                             background: 'linear-gradient(135deg, #F4D03F 0%, #D4A853 100%)',
-                          }
+                          },
                         }}
                       >
-                        {loading ? 'Création...' : 'Créer mon compte'}
+                        {loading ? t('auth.register.buttons.creating') : t('auth.register.buttons.create')}
                       </Button>
                     )}
                   </Box>
                 </form>
-                
+
                 <Divider sx={{ my: 4, borderColor: 'rgba(255, 255, 255, 0.1)' }} />
 
                 <Box textAlign="center">
                   <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                    Vous avez déjà un compte ?{' '}
+                    {t('auth.register.hasAccount')}{' '}
                     <Button
                       onClick={() => navigate('/login')}
                       sx={{
                         color: '#D4A853',
                         textTransform: 'none',
                         fontWeight: 700,
-                        '&:hover': {
-                          background: 'rgba(212, 168, 83, 0.1)',
-                        }
+                        '&:hover': { background: 'rgba(212, 168, 83, 0.1)' },
                       }}
                     >
-                      Se connecter
+                      {t('auth.register.loginLink')}
                     </Button>
                   </Typography>
                 </Box>
@@ -401,10 +413,10 @@ export const Register = () => {
                   '&:hover': {
                     color: '#D4A853',
                     background: 'rgba(212, 168, 83, 0.1)',
-                  }
+                  },
                 }}
               >
-                ← Retour à l'accueil
+                {t('auth.register.backHome')}
               </Button>
             </Box>
           </motion.div>

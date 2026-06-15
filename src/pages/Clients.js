@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Box,
@@ -17,13 +18,17 @@ import {
   IconButton,
   InputAdornment
 } from '@mui/material';
-import { Add, Search, MoreVert, Receipt } from '@mui/icons-material';
+import { Add, Search, Receipt, Delete, Edit, TableChart } from '@mui/icons-material';
 import { getClients, addClient, updateClient, deleteClient, getFactures } from '../services/firebaseService';
-import { LordIcon, Icons } from '../components/LordIcon';
+import { exportClientsToExcel } from '../utils/excelExporter';
+import { notify } from '../services/notificationService';
 import { AnimatedCard, Card3D } from '../components/AnimatedCard';
 import { AnimatedInput } from '../components/AnimatedInput';
+import { useAuth } from '../contexts/AuthContext';
 
 export const Clients = () => {
+  const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [clients, setClients] = useState([]);
   const [factures, setFactures] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -88,11 +93,21 @@ export const Clients = () => {
   const handleSubmit = async () => {
     if (editingClient) {
       await updateClient(editingClient.id, formData);
+      notify.clientModifie(formData.nom);
     } else {
       await addClient(formData);
+      notify.clientCree(formData.nom);
     }
     handleClose();
     loadData();
+  };
+
+  const handleDelete = async (client) => {
+    if (window.confirm(`Supprimer le client "${client.nom}" ?`)) {
+      await deleteClient(client.id);
+      notify.clientSupprime(client.nom);
+      loadData();
+    }
   };
 
   const filteredClients = clients.filter(client =>
@@ -138,25 +153,38 @@ export const Clients = () => {
               {clients.length} clients
             </Typography>
           </Box>
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={() => handleOpen()}
-            sx={{
-              background: 'linear-gradient(135deg, #D4A853 0%, #F4D03F 100%)',
-              color: '#080807',
-              fontWeight: 700,
-              px: 3,
-              py: 1.2,
-              borderRadius: 2,
-              textTransform: 'none',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #F4D03F 0%, #D4A853 100%)',
-              }
-            }}
-          >
-            Ajouter un Client
-          </Button>
+          <Box display="flex" gap={1}>
+            <Button
+              variant="outlined"
+              startIcon={<TableChart />}
+              onClick={() => { exportClientsToExcel(clients, factures); notify.excelExporte(); }}
+              sx={{
+                borderColor: '#4ade80', color: '#4ade80',
+                '&:hover': { background: 'rgba(74,222,128,0.1)' }
+              }}
+            >
+              Export Excel
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => handleOpen()}
+              sx={{
+                background: 'linear-gradient(135deg, #D4A853 0%, #F4D03F 100%)',
+                color: '#080807',
+                fontWeight: 700,
+                px: 3,
+                py: 1.2,
+                borderRadius: 2,
+                textTransform: 'none',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #F4D03F 0%, #D4A853 100%)',
+                }
+              }}
+            >
+              Ajouter un Client
+            </Button>
+          </Box>
         </Box>
       </motion.div>
 
@@ -213,7 +241,6 @@ export const Clients = () => {
                       background: 'rgba(255, 255, 255, 0.03)',
                       border: '1px solid rgba(255, 255, 255, 0.08)',
                       borderRadius: 3,
-                      cursor: 'pointer',
                       transition: 'all 0.3s ease',
                       '&:hover': {
                         background: 'rgba(255, 255, 255, 0.05)',
@@ -221,7 +248,6 @@ export const Clients = () => {
                         transform: 'translateY(-4px)',
                       }
                     }}
-                    onClick={() => handleOpen(client)}
                   >
                     <CardContent>
                       {/* Header */}
@@ -250,9 +276,25 @@ export const Clients = () => {
                               fontSize: '0.7rem'
                             }}
                           />
-                          <IconButton size="small" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-                            <MoreVert fontSize="small" />
+                          <IconButton 
+                            size="small" 
+                            onClick={() => handleOpen(client)}
+                            sx={{ color: 'rgba(255, 255, 255, 0.5)' }}
+                          >
+                            <Edit fontSize="small" />
                           </IconButton>
+                          {isAdmin && (
+                            <IconButton 
+                              size="small" 
+                              onClick={() => handleDelete(client)}
+                              sx={{ 
+                                color: 'rgba(239, 68, 68, 0.7)',
+                                '&:hover': { color: '#ef4444' }
+                              }}
+                            >
+                              <Delete fontSize="small" />
+                            </IconButton>
+                          )}
                         </Box>
                       </Box>
 
@@ -302,6 +344,10 @@ export const Clients = () => {
                         fullWidth
                         variant="outlined"
                         startIcon={<Add />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/factures/nouvelle?client=${client.id}`);
+                        }}
                         sx={{
                           mt: 2,
                           borderColor: 'rgba(212, 168, 83, 0.3)',
@@ -314,7 +360,7 @@ export const Clients = () => {
                           }
                         }}
                       >
-                        Invoice
+                        Facturer
                       </Button>
                     </CardContent>
                   </Card>

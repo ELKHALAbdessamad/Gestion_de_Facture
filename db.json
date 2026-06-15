@@ -37,6 +37,19 @@
     }
   ],
   "parametres": {
+    "devise": "MAD",
+    "societe_active": 0,
+    "societes": [
+      {
+        "nom": "Ma Société SARL",
+        "adresse": "123 Rue Example",
+        "ville": "Paris",
+        "code_postal": "75001",
+        "tel": "01 23 45 67 89",
+        "email": "contact@masociete.fr",
+        "siret": "123 456 789 00012"
+      }
+    ],
     "entreprise": {
       "nom": "Ma Société SARL",
       "adresse": "123 Rue Example",
