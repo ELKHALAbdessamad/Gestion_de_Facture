@@ -142,9 +142,18 @@
 % ============================================================================
 \begin{titlepage}
 
-% ── Logo EMSI en haut à gauche ───────────────────────────────────────────────
+% ── Logo EMSI en haut à gauche (TikZ — aucun fichier externe requis) ─────────
 \begin{flushleft}
-  \includegraphics[width=5cm]{logo_emsi.png}
+\begin{tikzpicture}
+  % Rectangle bleu fond
+  \fill[emsiblue] (0,0) rectangle (5.5,1.2);
+  % Texte EMSI blanc
+  \node[white, font=\bfseries\Large, anchor=west] at (0.15,0.85) {EMSI};
+  \node[white, font=\scriptsize, anchor=west] at (0.15,0.42) {École Marocaine des Sciences};
+  \node[white, font=\scriptsize, anchor=west] at (0.15,0.18) {de l'Ingénieur};
+  % Bande dorée à droite
+  \fill[goldColor] (5.3,0) rectangle (5.5,1.2);
+\end{tikzpicture}
 \end{flushleft}
 
 \vspace{-1cm}
