@@ -7,6 +7,7 @@ import {
 import { Add, Visibility, GetApp, Edit, Delete, TableChart, Search, Archive } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { getFactures, deleteFacture, getClients, toggleArchiveFacture } from '../services/mongodbService';
+import { deleteFactureFromRailway } from '../services/railwaySync';
 import { getArticles, getParametres } from '../services/mongodbService';
 import { downloadFacturePDF } from '../utils/pdfGenerator';
 import { exportFacturesToExcel } from '../utils/excelExporter';
@@ -79,6 +80,10 @@ export const Factures = () => {
   const handleDelete = async (facture) => {
     if (window.confirm(`Supprimer la facture ${facture.numero} ?`)) {
       await deleteFacture(facture.id);
+      
+      // 🌐 Suppression sur Railway/Atlas
+      await deleteFactureFromRailway(facture.id);
+      
       notify.factureSupprimee(facture.numero);
       loadData();
     }

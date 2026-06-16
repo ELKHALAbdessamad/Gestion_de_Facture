@@ -10,6 +10,7 @@ import {
 } from '@mui/icons-material';
 import { getFactureById, getClients, updateFacture, deleteFacture } from '../services/mongodbService';
 import { getArticles, getParametres } from '../services/mongodbService';
+import { syncFactureToRailway, deleteFactureFromRailway } from '../services/railwaySync';
 import { downloadFacturePDF } from '../utils/pdfGenerator';
 import { SignatureModal } from '../components/SignatureModal';
 import { notify } from '../services/notificationService';
@@ -81,13 +82,17 @@ export const FactureDetail = () => {
   const handleValidate = async () => {
     if (!isAdmin) return;
     // Valider = passer en statut "Payée" + marquer comme validé par admin
-    await updateFacture(id, {
+    const updated = await updateFacture(id, {
       statut: 'Payée',
       validated_by_admin: true,
       validated_by: currentUser?.email || 'admin',
       validated_at: new Date().toISOString(),
     });
     notify.factureValidee(facture.numero);
+    
+    // 🌐 Synchronisation vers Railway/Atlas
+    await syncFactureToRailway(updated || { ...facture, statut: 'Payée' });
+    
     loadData();
 
     if (client?.email) {
@@ -122,9 +127,13 @@ export const FactureDetail = () => {
   };
 
   const handleStatusChange = async (newStatut) => {
-    await updateFacture(id, { statut: newStatut });
+    const updated = await updateFacture(id, { statut: newStatut });
     if (newStatut === 'Payée')   notify.facturePayee(facture.numero);
     if (newStatut === 'Rejetée') notify.factureRejetee(facture.numero);
+    
+    // 🌐 Synchronisation vers Railway/Atlas
+    await syncFactureToRailway(updated || { ...facture, statut: newStatut });
+    
     loadData();
   };
 
@@ -132,6 +141,10 @@ export const FactureDetail = () => {
     if (!isAdmin) return;
     if (window.confirm('Supprimer cette facture définitivement ?')) {
       await deleteFacture(id);
+      
+      // 🌐 Suppression sur Railway/Atlas
+      await deleteFactureFromRailway(id);
+      
       notify.factureSupprimee(facture.numero);
       navigate('/factures');
     }

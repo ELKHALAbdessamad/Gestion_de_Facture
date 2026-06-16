@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Téléchargement Facture - NovaFact</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        .logo {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .invoice-number {
+            color: #667eea;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .details {
+            background: #f7f7f7;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        .detail-label {
+            color: #666;
+        }
+        .detail-value {
+            font-weight: 600;
+            color: #333;
+        }
+        .download-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 20px;
+        }
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        .download-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .loading {
+            color: #666;
+            margin: 20px 0;
+        }
+        .error {
+            color: #e74c3c;
+            background: #ffe5e5;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">📄</div>
+        <h1>Téléchargement de Facture</h1>
+        
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Chargement de la facture...</p>
+        </div>
+        
+        <div id="content" style="display: none;">
+            <div class="invoice-number" id="invoiceNumber"></div>
+            
+            <div class="details">
+                <div class="detail-row">
+                    <span class="detail-label">Client:</span>
+                    <span class="detail-value" id="clientName"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Date:</span>
+                    <span class="detail-value" id="invoiceDate"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Montant TTC:</span>
+                    <span class="detail-value" id="totalAmount"></span>
+                </div>
+            </div>
+            
+            <button class="download-btn" onclick="downloadPDF()">
+                📥 Télécharger le PDF
+            </button>
+        </div>
+        
+        <div id="error" class="error" style="display: none;"></div>
+    </div>
+
+    <script>
+        let factureData = null;
+        
+        // Extraire l'ID depuis l'URL
+        const pathParts = window.location.pathname.split('/');
+        const invoiceId = pathParts[pathParts.length - 1];
+        
+        // Charger les données de la facture
+        async function loadInvoice() {
+            try {
+                const response = await fetch(`/api/factures/download/${invoiceId}`);
+                
+                if (!response.ok) {
+                    throw new Error('Facture introuvable');
+                }
+                
+                const data = await response.json();
+                factureData = data;
+                
+                // Afficher les informations
+                document.getElementById('invoiceNumber').textContent = data.facture.numero;
+                document.getElementById('clientName').textContent = data.client?.nom || 'N/A';
+                document.getElementById('invoiceDate').textContent = new Date(data.facture.date_creation).toLocaleDateString('fr-FR');
+                document.getElementById('totalAmount').textContent = `${data.facture.total_ttc.toFixed(2)} ${data.facture.devise || 'MAD'}`;
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+                
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = `Erreur: ${error.message}`;
+            }
+        }
+        
+        // Télécharger le PDF (version simplifiée)
+        function downloadPDF() {
+            if (!factureData) return;
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // En-tête
+            doc.setFontSize(20);
+            doc.text('FACTURE', 105, 20, { align: 'center' });
+            
+            doc.setFontSize(14);
+            doc.text(factureData.facture.numero, 105, 30, { align: 'center' });
+            
+            // Informations client
+            doc.setFontSize(12);
+            doc.text('Client:', 20, 50);
+            doc.text(factureData.client?.nom || 'N/A', 20, 60);
+            
+            if (factureData.client?.email) {
+                doc.text(factureData.client.email, 20, 70);
+            }
+            
+            // Date
+            doc.text(`Date: ${new Date(factureData.facture.date_creation).toLocaleDateString('fr-FR')}`, 20, 85);
+            
+            // Articles
+            let y = 100;
+            doc.text('Articles:', 20, y);
+            y += 10;
+            
+            (factureData.facture.articles || []).forEach((article, index) => {
+                doc.setFontSize(10);
+                doc.text(`${article.designation} - Qté: ${article.quantite} - Prix: ${article.prix_unitaire}`, 20, y);
+                y += 7;
+            });
+            
+            // Total
+            y += 10;
+            doc.setFontSize(14);
+            doc.text(`Total TTC: ${factureData.facture.total_ttc.toFixed(2)} ${factureData.facture.devise || 'MAD'}`, 20, y);
+            
+            // Télécharger
+            doc.save(`${factureData.facture.numero}.pdf`);
+        }
+        
+        // Charger automatiquement au démarrage
+        loadInvoice();
+    </script>
+</body>
+</html>

@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import { Add, Delete, ArrowBack, Save, Send } from '@mui/icons-material';
 import { getClients, addFacture, getFactureById, updateFacture, getArticles, getCategories, getParametres } from '../services/mongodbService';
+import { syncFactureToRailway } from '../services/railwaySync';
 import { notify } from '../services/notificationService';
 import { AnimatedCard } from '../components/AnimatedCard';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -232,15 +233,21 @@ export const FactureForm = () => {
     });
 
     if (id) {
-      await updateFacture(id, factureData);
+      const updated = await updateFacture(id, factureData);
       notify.factureModifiee(factureData.numero);
+      
+      // 🌐 Synchronisation vers Railway/Atlas via navigateur
+      await syncFactureToRailway(updated || { ...factureData, _id: id });
     } else {
-      await addFacture(factureData);
+      const created = await addFacture(factureData);
       if (status === 'send') {
         notify.factureSoumise(factureData.numero);
       } else {
         notify.factureCreee(factureData.numero);
       }
+      
+      // 🌐 Synchronisation vers Railway/Atlas via navigateur
+      await syncFactureToRailway(created);
     }
 
     navigate('/factures');
