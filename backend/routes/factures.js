@@ -72,6 +72,24 @@ router.post('/sync', async (req, res) => {
   }
 });
 
+// Route publique pour synchronisation des suppressions depuis backend local vers Atlas
+router.delete('/sync-delete/:id', async (req, res) => {
+  try {
+    const facture = await Facture.findByIdAndDelete(req.params.id);
+    
+    if (!facture) {
+      console.log(`⚠️ Facture ${req.params.id} déjà supprimée sur Atlas`);
+      return res.json({ success: true, message: 'Facture déjà supprimée' });
+    }
+    
+    console.log(`🗑️ Facture ${facture.numero} supprimée sur Atlas via sync`);
+    res.json({ success: true, message: 'Facture supprimée sur Atlas' });
+  } catch (error) {
+    console.error('❌ Erreur synchronisation suppression:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET toutes les factures de l'utilisateur (ou toutes si admin) - EXCLUT les archivées
 router.get('/', authenticate, async (req, res) => {
   try {
@@ -236,16 +254,37 @@ router.put('/:id', authenticate, async (req, res) => {
 // DELETE supprimer une facture (admin only)
 router.delete('/:id', authenticate, requireAdmin, async (req, res) => {
   try {
-    const facture = await Facture.findOneAndDelete({
-      _id: req.params.id,
-      user_id: req.userId
-    });
+    console.log(`🔍 Tentative de suppression de facture avec ID: ${req.params.id}`);
+    console.log(`👤 Utilisateur: ${req.user.email}, Role: ${req.user.role}`);
+    
+    // Admin peut supprimer n'importe quelle facture
+    const facture = await Facture.findByIdAndDelete(req.params.id);
     
     if (!facture) {
+      console.log(`❌ Facture non trouvée avec l'ID: ${req.params.id}`);
       return res.status(404).json({ error: 'Facture introuvable' });
     }
+    
+    console.log(`🗑️ Facture ${facture.numero} supprimée localement par ${req.user.email}`);
+    
+    // ✨ Synchronisation de la suppression vers Railway/Atlas
+    try {
+      const railwayUrl = process.env.RAILWAY_SYNC_URL || 'https://gestiondefacture-production.up.railway.app';
+      
+      await fetch(`${railwayUrl}/api/factures/sync-delete/${req.params.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      console.log(`✅ Facture ${facture.numero} supprimée aussi sur Railway/Atlas`);
+    } catch (syncError) {
+      console.error('⚠️ Erreur synchronisation suppression (non bloquante):', syncError.message);
+      // On ne bloque pas la suppression locale même si la sync échoue
+    }
+    
     res.json({ message: 'Facture supprimée' });
   } catch (error) {
+    console.error(`❌ Erreur lors de la suppression:`, error);
     res.status(500).json({ error: error.message });
   }
 });

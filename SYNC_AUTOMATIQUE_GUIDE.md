@@ -10,6 +10,7 @@
 ### 2. Backend local modifié
 - **Création de facture** : Envoie automatiquement vers Railway
 - **Modification de facture** : Re-synchronise vers Railway
+- **Suppression de facture** : Supprime aussi sur Railway/Atlas
 - MongoDB local : Données sauvegardées localement (sécurité)
 - Synchronisation non-bloquante : L'app fonctionne même si Railway est down
 
@@ -17,6 +18,7 @@
 
 ## 🚀 COMMENT ÇA MARCHE
 
+### Création/Modification :
 ```
 👤 Vous créez une facture
          ↓
@@ -27,6 +29,19 @@
 ☁️ Railway sauvegarde dans MongoDB ATLAS
          ↓
 📱 QR code fonctionne partout dans le monde ! 🌍
+```
+
+### Suppression :
+```
+🗑️ Vous supprimez une facture (admin)
+         ↓
+💾 Suppression de MongoDB LOCAL
+         ↓
+🌐 Envoi commande vers Railway
+         ↓
+☁️ Railway supprime aussi d'ATLAS
+         ↓
+✅ Facture supprimée partout !
 ```
 
 ---
