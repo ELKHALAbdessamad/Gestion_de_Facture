@@ -15,22 +15,27 @@ import {
   Divider
 } from '@mui/material';
 import { Add, Delete, ArrowBack, Save, Send } from '@mui/icons-material';
-import { getClients, addFacture, getFactureById, updateFacture } from '../services/firebaseService';
-import { getCategories } from '../services/jsonService';
+import { getClients, addFacture, getFactureById, updateFacture, getArticles, getCategories, getParametres } from '../services/mongodbService';
 import { notify } from '../services/notificationService';
 import { AnimatedCard } from '../components/AnimatedCard';
+import { useLanguage } from '../contexts/LanguageContext';
+import { formatMoney } from '../utils/currency';
 
 export const FactureForm = () => {
+  const { t } = useLanguage();
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [clients, setClients] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [articles, setArticles] = useState([]);
+  const [devise, setDevise] = useState('MAD');
   const [formData, setFormData] = useState({
     numero: '',
     date_creation: new Date().toISOString().split('T')[0],
     date_echeance: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     client_id: '',
+    devise: 'MAD',
     articles: [],
     statut: 'Draft',
     notes: '',
@@ -41,17 +46,24 @@ export const FactureForm = () => {
     type_virement: ''
   });
   const [lineItems, setLineItems] = useState([
-    { description: '', quantity: 1, rate: 0, discount: 0, total: 0 }
+    { description: '', quantity: 1, rate: 0, discount: 0, total: 0, article_id: '' }
   ]);
 
   useEffect(() => {
     const loadData = async () => {
-      const [clientsData, categoriesData] = await Promise.all([
+      const [clientsData, categoriesData, articlesData, parametresData] = await Promise.all([
         getClients(),
-        getCategories()
+        getCategories(),
+        getArticles(),
+        getParametres().catch(() => null),
       ]);
       setClients(clientsData);
       setCategories(categoriesData);
+      setArticles(articlesData);
+      if (parametresData && parametresData.devise) {
+        setDevise(parametresData.devise);
+        setFormData(prev => ({ ...prev, devise: parametresData.devise }));
+      }
 
       const clientIdFromUrl = searchParams.get('client');
       if (clientIdFromUrl && !id) {
@@ -72,7 +84,10 @@ export const FactureForm = () => {
               quantity: a.quantite,
               rate: a.prix_unitaire,
               discount: a.remise || 0,
-              total: a.quantite * a.prix_unitaire * (1 - (a.remise || 0) / 100)
+              categorie_id: a.categorie_id,
+              tva: a.tva,
+              total: a.quantite * a.prix_unitaire * (1 - (a.remise || 0) / 100),
+              article_id: ''
             })));
           }
         }
@@ -87,7 +102,7 @@ export const FactureForm = () => {
   }, [id, searchParams]);
 
   const handleAddLine = () => {
-    setLineItems([...lineItems, { description: '', quantity: 1, rate: 0, discount: 0, categorie_id: '', tva: 20, total: 0 }]);
+    setLineItems([...lineItems, { description: '', quantity: 1, rate: 0, discount: 0, categorie_id: '', tva: 20, total: 0, article_id: '' }]);
   };
 
   const handleRemoveLine = (index) => {
@@ -104,12 +119,23 @@ export const FactureForm = () => {
     const newLines = [...lineItems];
     newLines[index][field] = value;
 
+    // Si on sélectionne un article existant, remplir automatiquement les champs
+    if (field === 'article_id' && value) {
+      const selectedArticle = articles.find(a => a.id === value || a._id === value);
+      if (selectedArticle) {
+        newLines[index].description = selectedArticle.designation;
+        newLines[index].rate = selectedArticle.prix_unitaire;
+        newLines[index].categorie_id = selectedArticle.categorie_id?.id || selectedArticle.categorie_id;
+        newLines[index].tva = getTVAForCategory(selectedArticle.categorie_id?.id || selectedArticle.categorie_id);
+      }
+    }
+
     // Recalcul selon catégorie si on change la catégorie
     if (field === 'categorie_id') {
       newLines[index].tva = getTVAForCategory(value);
     }
 
-    if (['quantity', 'rate', 'discount', 'categorie_id'].includes(field)) {
+    if (['quantity', 'rate', 'discount', 'categorie_id', 'article_id'].includes(field)) {
       const quantity = parseFloat(newLines[index].quantity) || 0;
       const rate     = parseFloat(newLines[index].rate)     || 0;
       const discount = parseFloat(newLines[index].discount) || 0;
@@ -174,15 +200,27 @@ export const FactureForm = () => {
     const factureData = {
       ...formData,
       articles: articlesData,
-      statut: status === 'send' ? 'En attente' : 'Draft',
+      // En mode édition, garder le statut existant sauf si on envoie explicitement
+      statut: id
+        ? (status === 'send' ? 'En attente' : formData.statut || 'Draft')
+        : (status === 'send' ? 'En attente' : 'Draft'),
       total_ht: totalHT,
       remise_globale: remiseGlobale,
       remise_montant: remiseMontant,
       total_apres_remise: totalApresRemise,
       tva: tva,
       total_ttc: totalTTC,
+      devise: devise,
       date_creation: new Date(formData.date_creation).toISOString()
     };
+
+    // Nettoyer les champs ObjectId vides pour éviter erreur de cast Mongoose
+    if (!factureData.client_id) delete factureData.client_id;
+    // Nettoyer categorie_id vide dans les articles
+    factureData.articles = factureData.articles.map(a => {
+      if (!a.categorie_id) { const { categorie_id, ...rest } = a; return rest; }
+      return a;
+    });
 
     if (id) {
       await updateFacture(id, factureData);
@@ -224,10 +262,10 @@ export const FactureForm = () => {
             </IconButton>
             <Box>
               <Typography variant="h4" sx={{ fontWeight: 800, color: '#fff' }}>
-                {id ? 'Modifier la Facture' : 'Nouvelle Facture'}
+                {id ? t('invoiceForm.title.edit') : t('invoiceForm.title.new')}
               </Typography>
               <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-                {id ? 'Modification' : 'Brouillon · Non enregistré'}
+                {id ? t('common.edit') : t('common.loading')}
               </Typography>
             </Box>
           </Box>
@@ -267,7 +305,7 @@ export const FactureForm = () => {
                 }
               }}
             >
-              Envoyer la Facture
+              {t('common.send')} {t('dashboard.newInvoice')}
             </Button>
           </Box>
         </Box>
@@ -372,7 +410,7 @@ export const FactureForm = () => {
                   display: 'block'
                 }}
               >
-                FACTURER À
+                {t('invoiceForm.sections.client').toUpperCase()}
               </Typography>
               <FormControl 
                 fullWidth 
@@ -398,7 +436,7 @@ export const FactureForm = () => {
                   sx={{ color: formData.client_id ? '#fff' : 'rgba(255, 255, 255, 0.5)' }}
                 >
                   <MenuItem value="" disabled>
-                    Sélectionner un client...
+                    {t('invoiceForm.fields.selectClient')}
                   </MenuItem>
                   {clients.map(client => (
                     <MenuItem key={client.id} value={client.id}>
@@ -407,6 +445,7 @@ export const FactureForm = () => {
                   ))}
                 </Select>
               </FormControl>
+
               {selectedClient && (
                 <>
                   <TextField
@@ -449,7 +488,7 @@ export const FactureForm = () => {
 
             <Grid item xs={12} md={4}>
               <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', display: 'block', mb: 1 }}>
-                Numéro de Facture
+                {t('invoiceForm.fields.invoiceNumber')}
               </Typography>
               <TextField
                 fullWidth
@@ -473,7 +512,7 @@ export const FactureForm = () => {
 
             <Grid item xs={12} md={4}>
               <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', display: 'block', mb: 1 }}>
-                Date d'Émission
+                {t('invoiceForm.fields.date')}
               </Typography>
               <TextField
                 fullWidth
@@ -498,7 +537,7 @@ export const FactureForm = () => {
 
             <Grid item xs={12} md={4}>
               <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', display: 'block', mb: 1 }}>
-                Date d'Échéance
+                {t('invoiceForm.fields.dueDate')}
               </Typography>
               <TextField
                 fullWidth
@@ -535,17 +574,41 @@ export const FactureForm = () => {
                   display: 'block'
                 }}
               >
-                DESCRIPTION
+                {t('invoiceForm.sections.articles').toUpperCase()}
               </Typography>
 
               {lineItems.map((item, index) => (
                 <Grid container spacing={2} key={index} sx={{ mb: 2 }} alignItems="center">
 
-                  {/* Description */}
+                  {/* Sélecteur d'article existant OU saisie manuelle */}
                   <Grid item xs={12} md={3}>
+                    <Select
+                      fullWidth
+                      displayEmpty
+                      value={item.article_id || ''}
+                      onChange={(e) => handleLineChange(index, 'article_id', e.target.value)}
+                      sx={{ 
+                        borderRadius: 2, 
+                        background: 'rgba(255,255,255,0.02)', 
+                        border: '1px solid rgba(255,255,255,0.08)', 
+                        '& fieldset': { border: 'none' }, 
+                        color: item.article_id ? '#fff' : 'rgba(255,255,255,0.4)', 
+                        fontSize: '0.9rem',
+                        mb: 1
+                      }}
+                    >
+                      <MenuItem value="">
+                        <em>📦 Sélectionner un article existant...</em>
+                      </MenuItem>
+                      {articles.map(art => (
+                        <MenuItem key={art.id || art._id} value={art.id || art._id}>
+                          {art.designation} — {art.prix_unitaire} {devise}
+                        </MenuItem>
+                      ))}
+                    </Select>
                     <TextField
                       fullWidth
-                      placeholder="Désignation article/service"
+                      placeholder="OU entrer manuellement"
                       value={item.description}
                       onChange={(e) => handleLineChange(index, 'description', e.target.value)}
                       sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', '& fieldset': { border: 'none' }, '&.Mui-focused': { border: '1px solid rgba(212,168,83,0.3)' } } }}
@@ -583,7 +646,7 @@ export const FactureForm = () => {
                   {/* Prix */}
                   <Grid item xs={4} md={2}>
                     <TextField
-                      fullWidth type="number" placeholder="Prix MAD"
+                      fullWidth type="number" placeholder={`Prix ${devise}`}
                       value={item.rate}
                       onChange={(e) => handleLineChange(index, 'rate', parseFloat(e.target.value) || 0)}
                       sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', '& fieldset': { border: 'none' }, '&.Mui-focused': { border: '1px solid rgba(212,168,83,0.3)' } } }}
@@ -608,7 +671,7 @@ export const FactureForm = () => {
                           TVA {item.tva ?? 20}%
                         </Typography>
                         <Typography variant="body1" sx={{ fontWeight: 600, color: '#D4A853' }}>
-                          {(item.total || 0).toFixed(2)} MAD
+                          {formatMoney(item.total, devise)}
                         </Typography>
                       </Box>
                     </Box>
@@ -640,7 +703,7 @@ export const FactureForm = () => {
                   }
                 }}
               >
-                Ajouter une ligne
+                {t('invoiceForm.buttons.addArticle')}
               </Button>
             </Grid>
 
@@ -651,17 +714,17 @@ export const FactureForm = () => {
                 <Box sx={{ minWidth: 400 }}>
                   <Box display="flex" justifyContent="space-between" mb={2}>
                     <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                      Sous-total
+                      {t('invoiceDetail.fields.totalHT')}
                     </Typography>
                     <Typography variant="body1" sx={{ fontWeight: 600, color: '#fff' }}>
-                      €{calculateSubtotal().toFixed(2)}
+                      {formatMoney(calculateSubtotal(), devise)}
                     </Typography>
                   </Box>
                   
                   {/* Remise Globale */}
                   <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                     <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                      Remise globale
+                      {t('invoiceDetail.fields.globalDiscount')}
                     </Typography>
                     <Box display="flex" alignItems="center" gap={1}>
                       <TextField
@@ -683,8 +746,8 @@ export const FactureForm = () => {
                       <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', width: 20 }}>
                         %
                       </Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 600, color: '#ef4444', width: 80, textAlign: 'right' }}>
-                        -€{calculateGlobalDiscount().toFixed(2)}
+                      <Typography variant="body1" sx={{ fontWeight: 600, color: '#ef4444', minWidth: 100, textAlign: 'right' }}>
+                        -{formatMoney(calculateGlobalDiscount(), devise)}
                       </Typography>
                     </Box>
                   </Box>
@@ -692,29 +755,29 @@ export const FactureForm = () => {
                   {formData.remise_globale > 0 && (
                     <Box display="flex" justifyContent="space-between" mb={2}>
                       <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                        Total après remise
+                        {t('invoiceDetail.fields.afterDiscount')}
                       </Typography>
                       <Typography variant="body1" sx={{ fontWeight: 600, color: '#fff' }}>
-                        €{calculateSubtotalAfterDiscount().toFixed(2)}
+                        {formatMoney(calculateSubtotalAfterDiscount(), devise)}
                       </Typography>
                     </Box>
                   )}
 
                   <Box display="flex" justifyContent="space-between" mb={2}>
                     <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                      TVA (20%)
+                      {t('invoiceDetail.fields.totalVAT')} (20%)
                     </Typography>
                     <Typography variant="body1" sx={{ fontWeight: 600, color: '#fff' }}>
-                      €{calculateTax().toFixed(2)}
+                      {formatMoney(calculateTax(), devise)}
                     </Typography>
                   </Box>
                   <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.08)', my: 2 }} />
                   <Box display="flex" justifyContent="space-between" mb={3}>
                     <Typography variant="h6" sx={{ fontWeight: 700, color: '#fff' }}>
-                      Total TTC
+                      {t('invoiceDetail.fields.totalTTC')}
                     </Typography>
                     <Typography variant="h5" sx={{ fontWeight: 800, color: '#D4A853' }}>
-                      €{calculateTotal().toFixed(2)}
+                      {formatMoney(calculateTotal(), devise)}
                     </Typography>
                   </Box>
 
@@ -731,12 +794,12 @@ export const FactureForm = () => {
                       display: 'block'
                     }}
                   >
-                    INFORMATIONS DE PAIEMENT
+                    {t('invoiceForm.fields.paymentMethod').toUpperCase()}
                   </Typography>
                   
                   <FormControl fullWidth sx={{ mb: 2 }}>
                     <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', mb: 1, display: 'block' }}>
-                      Mode de paiement
+                      {t('invoiceForm.fields.paymentMethod')}
                     </Typography>
                     <Select
                       value={formData.mode_paiement}
@@ -761,7 +824,7 @@ export const FactureForm = () => {
 
                   <Box sx={{ mb: 2 }}>
                     <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', mb: 1, display: 'block' }}>
-                      Date de dépôt
+                      {t('invoiceForm.fields.depositDate')}
                     </Typography>
                     <TextField
                       fullWidth
@@ -781,7 +844,7 @@ export const FactureForm = () => {
 
                   <Box sx={{ mb: 2 }}>
                     <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', mb: 1, display: 'block' }}>
-                      Date d'encaissement
+                      {t('invoiceForm.fields.collectionDate')}
                     </Typography>
                     <TextField
                       fullWidth
@@ -801,7 +864,7 @@ export const FactureForm = () => {
 
                   <Box>
                     <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', mb: 1, display: 'block' }}>
-                      Type de virement
+                      {t('invoiceForm.fields.transferType')}
                     </Typography>
                     <Select
                       fullWidth

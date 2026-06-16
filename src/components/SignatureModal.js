@@ -6,6 +6,9 @@ import {
 } from '@mui/material';
 import { Close, Refresh, Check, Draw } from '@mui/icons-material';
 
+// Fix pour webpack 5
+const SignaturePad = SignatureCanvas.default || SignatureCanvas;
+
 export const SignatureModal = ({ open, onClose, onSave }) => {
   const sigPadRef = useRef(null);
 
@@ -65,7 +68,7 @@ export const SignatureModal = ({ open, onClose, onSave }) => {
             overflow: 'hidden',
           }}
         >
-          <SignatureCanvas
+          <SignaturePad
             ref={sigPadRef}
             penColor="#D4A853"
             canvasProps={{

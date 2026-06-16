@@ -81,5 +81,8 @@ export const notify = {
     }),
 
   emailEnvoye: (email) =>
-    toast.success(`📧 Email envoyé à ${email}`, defaultOptions),
+    toast.success(`📧 Email envoyé automatiquement à ${email}`, defaultOptions),
+  
+  emailMailto: (email) =>
+    toast.info(`📧 Client mail ouvert pour ${email} — Cliquez sur Envoyer dans votre client`, { ...defaultOptions, autoClose: 6000 }),
 };

@@ -73,7 +73,7 @@ export const sendFactureByEmailJS = async (facture, client, parametres) => {
   );
 
   if (result.status !== 200) throw new Error(`Erreur EmailJS : ${result.text}`);
-  return true;
+  return { success: true, method: 'emailjs' };
 };
 
 // ── Fallback mailto: (ouvre le client mail) ───────────────────────────────────
@@ -97,8 +97,9 @@ export const sendByMailto = (facture, client, parametres) => {
     `\nCordialement,\n${ent.nom || 'Facture.net'} — ${ent.email || ''}`
   );
 
+  // Ouvre le client mail — uniquement au client
   window.open(`mailto:${encodeURIComponent(client.email)}?subject=${subject}&body=${body}`, '_blank');
-  return true;
+  return { success: true, method: 'mailto' };
 };
 
 // ── Point d'entrée principal : essaie EmailJS, sinon mailto ───────────────────

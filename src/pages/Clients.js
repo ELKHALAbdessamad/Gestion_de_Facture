@@ -19,14 +19,16 @@ import {
   InputAdornment
 } from '@mui/material';
 import { Add, Search, Receipt, Delete, Edit, TableChart } from '@mui/icons-material';
-import { getClients, addClient, updateClient, deleteClient, getFactures } from '../services/firebaseService';
+import { getClients, addClient, updateClient, deleteClient, getFactures } from '../services/mongodbService';
 import { exportClientsToExcel } from '../utils/excelExporter';
 import { notify } from '../services/notificationService';
 import { AnimatedCard, Card3D } from '../components/AnimatedCard';
 import { AnimatedInput } from '../components/AnimatedInput';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContextMongoDB';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export const Clients = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
   const [clients, setClients] = useState([]);
@@ -147,10 +149,10 @@ export const Clients = () => {
         <Box display="flex" alignItems="center" justifyContent="space-between" mb={4}>
           <Box>
             <Typography variant="h4" sx={{ fontWeight: 800, color: '#fff', mb: 0.5 }}>
-              Clients
+              {t('clients.title')}
             </Typography>
             <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-              {clients.length} clients
+              {clients.length} {t('clients.count')}
             </Typography>
           </Box>
           <Box display="flex" gap={1}>
@@ -182,7 +184,7 @@ export const Clients = () => {
                 }
               }}
             >
-              Ajouter un Client
+              {t('clients.addClient')}
             </Button>
           </Box>
         </Box>
@@ -193,7 +195,7 @@ export const Clients = () => {
         <Box mb={4}>
           <TextField
             fullWidth
-            placeholder="Search clients..."
+            placeholder={t('clients.searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             InputProps={{
@@ -320,7 +322,7 @@ export const Clients = () => {
                       >
                         <Box>
                           <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', display: 'block' }}>
-                            Total Invoiced
+                            {t('clients.table.totalInvoiced')}
                           </Typography>
                           <Typography variant="h6" sx={{ fontWeight: 700, color: '#D4A853' }}>
                             €{stats.totalInvoiced.toLocaleString()}
@@ -328,7 +330,7 @@ export const Clients = () => {
                         </Box>
                         <Box textAlign="right">
                           <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', display: 'block' }}>
-                            Invoices
+                            {t('clients.table.invoices')}
                           </Typography>
                           <Box display="flex" alignItems="center" gap={0.5}>
                             <Receipt sx={{ fontSize: 16, color: '#fff' }} />
@@ -360,7 +362,7 @@ export const Clients = () => {
                           }
                         }}
                       >
-                        Facturer
+                        {t('clients.actions.invoice')}
                       </Button>
                     </CardContent>
                   </Card>
@@ -387,29 +389,29 @@ export const Clients = () => {
         }}
       >
         <DialogTitle sx={{ fontWeight: 700, fontSize: '1.5rem', color: '#fff' }}>
-          {editingClient ? 'Modifier le Client' : 'Ajouter un Nouveau Client'}
+          {editingClient ? t('clients.dialog.edit') : t('clients.dialog.add')}
         </DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2 }}>
             <AnimatedInput
-              label="Client Name"
+              label={t('clients.dialog.fields.name')}
               value={formData.nom}
               onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
               required
             />
             <AnimatedInput
-              label="Email"
+              label={t('clients.dialog.fields.email')}
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             />
             <AnimatedInput
-              label="Phone"
+              label={t('clients.dialog.fields.phone')}
               value={formData.tel}
               onChange={(e) => setFormData({ ...formData, tel: e.target.value })}
             />
             <AnimatedInput
-              label="Adresse"
+              label={t('clients.dialog.fields.address')}
               value={formData.adresse}
               onChange={(e) => setFormData({ ...formData, adresse: e.target.value })}
               multiline
@@ -429,7 +431,7 @@ export const Clients = () => {
               }
             }}
           >
-            Annuler
+            {t('common.cancel')}
           </Button>
           <Button 
             onClick={handleSubmit} 
@@ -445,7 +447,7 @@ export const Clients = () => {
               }
             }}
           >
-            {editingClient ? 'Enregistrer' : 'Ajouter le Client'}
+            {editingClient ? t('clients.dialog.buttons.save') : t('clients.dialog.buttons.add')}
           </Button>
         </DialogActions>
       </Dialog>

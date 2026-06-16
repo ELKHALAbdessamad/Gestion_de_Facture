@@ -8,16 +8,18 @@ import {
 import {
   ArrowBack, GetApp, Edit, CheckCircle, Delete, Draw, Email
 } from '@mui/icons-material';
-import { getFactureById, getClients, updateFacture, deleteFacture } from '../services/firebaseService';
-import { getArticles, getParametres } from '../services/jsonService';
+import { getFactureById, getClients, updateFacture, deleteFacture } from '../services/mongodbService';
+import { getArticles, getParametres } from '../services/mongodbService';
 import { downloadFacturePDF } from '../utils/pdfGenerator';
 import { SignatureModal } from '../components/SignatureModal';
 import { notify } from '../services/notificationService';
 import { sendFactureByEmail } from '../services/emailService';
 import { formatMoney } from '../utils/currency';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContextMongoDB';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export const FactureDetail = () => {
+  const { t, language } = useLanguage();
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAdmin, currentUser } = useAuth();
@@ -38,20 +40,37 @@ export const FactureDetail = () => {
     setArticles(articlesData);
     setParametres(parametresData);
     if (factureData) {
-      setClient(clientsData.find(c => c.id === factureData.client_id) || null);
+      // client_id peut être un objet populé ou un string ObjectId
+      const cid = factureData.client_id;
+      if (cid && typeof cid === 'object' && cid.nom) {
+        setClient(cid);
+      } else {
+        setClient(clientsData.find(c => String(c.id) === String(cid) || String(c._id) === String(cid)) || null);
+      }
     }
   }, [id]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => { 
+    loadData(); 
+  }, [loadData]);
+
+  // Restaurer la signature depuis la DB
+  useEffect(() => {
+    if (facture && facture.signature) {
+      setSignatureDataUrl(facture.signature);
+    }
+  }, [facture]);
 
   const handleDownloadPDF = async () => {
-    if (!facture || !client) {
+    if (!facture) {
       notify.error('Données manquantes pour générer le PDF');
       return;
     }
     setPdfLoading(true);
     try {
-      await downloadFacturePDF(facture, client, articles, parametres, signatureDataUrl);
+      // Ajouter l'ID à la facture pour le QR code
+      const factureWithId = { ...facture, id };
+      await downloadFacturePDF(factureWithId, client, articles, parametres, signatureDataUrl, language);
       notify.pdfGenere(facture.numero);
     } catch (e) {
       notify.error('Erreur lors de la génération du PDF');
@@ -72,22 +91,30 @@ export const FactureDetail = () => {
 
     if (client?.email) {
       try {
-        sendFactureByEmail(facture, client, parametres);
-        notify.emailEnvoye(client.email);
+        const result = await sendFactureByEmail(facture, client, parametres);
+        if (result.method === 'mailto') {
+          notify.emailMailto(client.email);
+        } else {
+          notify.emailEnvoye(client.email);
+        }
       } catch {
         notify.warning('Facture validée — email client non disponible');
       }
     }
   };
 
-  const handleSendEmail = () => {
+  const handleSendEmail = async () => {
     if (!client?.email) {
       notify.error('Ce client n\'a pas d\'adresse email');
       return;
     }
     try {
-      sendFactureByEmail(facture, client, parametres);
-      notify.emailEnvoye(client.email);
+      const result = await sendFactureByEmail(facture, client, parametres);
+      if (result.method === 'mailto') {
+        notify.emailMailto(client.email);
+      } else {
+        notify.emailEnvoye(client.email);
+      }
     } catch (err) {
       notify.error(err.message || 'Impossible d\'envoyer l\'email');
     }
@@ -139,12 +166,12 @@ export const FactureDetail = () => {
           onClick={() => navigate('/factures')}
           sx={{ color: 'rgba(255,255,255,0.7)' }}
         >
-          Retour
+          {t('invoiceDetail.buttons.back')}
         </Button>
 
         <Box display="flex" gap={1} flexWrap="wrap">
           {/* Signature */}
-          <Tooltip title={signatureDataUrl ? 'Signature ajoutée ✓' : 'Ajouter une signature'}>
+          <Tooltip title={signatureDataUrl ? t('invoiceDetail.buttons.signed') : 'Ajouter une signature'}>
             <Button
               variant="outlined"
               startIcon={<Draw />}
@@ -154,7 +181,7 @@ export const FactureDetail = () => {
                 color: signatureDataUrl ? '#4ade80' : '#D4A853',
               }}
             >
-              {signatureDataUrl ? 'Signature ✓' : 'Signer'}
+              {signatureDataUrl ? t('invoiceDetail.buttons.signed') : t('invoiceDetail.buttons.sign')}
             </Button>
           </Tooltip>
 
@@ -166,7 +193,7 @@ export const FactureDetail = () => {
               onClick={handleValidate}
               sx={{ background: 'linear-gradient(135deg,#4ade80,#22c55e)', color: '#fff' }}
             >
-              Valider
+              {t('invoiceDetail.buttons.validate')}
             </Button>
           )}
 
@@ -178,7 +205,7 @@ export const FactureDetail = () => {
                 onClick={() => handleStatusChange('Payée')}
                 sx={{ borderColor: '#4ade80', color: '#4ade80' }}
               >
-                Marquer Payée
+                {t('invoiceDetail.buttons.markPaid')}
               </Button>
               {isAdmin && (
                 <Button
@@ -186,7 +213,7 @@ export const FactureDetail = () => {
                   onClick={() => handleStatusChange('Rejetée')}
                   sx={{ borderColor: '#ef4444', color: '#ef4444' }}
                 >
-                  Rejeter
+                  {t('invoiceDetail.buttons.reject')}
                 </Button>
               )}
             </>
@@ -199,20 +226,19 @@ export const FactureDetail = () => {
             onClick={() => navigate(`/factures/edit/${id}`)}
             sx={{ borderColor: 'rgba(255,255,255,0.2)', color: '#fff' }}
           >
-            Modifier
+            {t('invoiceDetail.buttons.edit')}
           </Button>
 
           {/* Email client */}
-          {client?.email && (
-            <Button
-              variant="outlined"
-              startIcon={<Email />}
-              onClick={handleSendEmail}
-              sx={{ borderColor: '#60a5fa', color: '#60a5fa' }}
-            >
-              Envoyer par Email
-            </Button>
-          )}
+          <Button
+            variant="outlined"
+            startIcon={<Email />}
+            onClick={handleSendEmail}
+            disabled={!client?.email}
+            sx={{ borderColor: '#60a5fa', color: '#60a5fa', opacity: !client?.email ? 0.4 : 1 }}
+          >
+            {t('invoiceDetail.buttons.sendEmail')}
+          </Button>
 
           {/* PDF */}
           <Button
@@ -225,7 +251,7 @@ export const FactureDetail = () => {
               color: '#080807', fontWeight: 700,
             }}
           >
-            {pdfLoading ? 'Génération...' : 'Télécharger PDF'}
+            {pdfLoading ? t('invoiceDetail.buttons.generating') : t('invoiceDetail.buttons.downloadPDF')}
           </Button>
 
           {/* Supprimer (admin) */}
@@ -236,7 +262,7 @@ export const FactureDetail = () => {
               startIcon={<Delete />}
               onClick={handleDelete}
             >
-              Supprimer
+              {t('invoiceDetail.buttons.delete')}
             </Button>
           )}
         </Box>
@@ -248,17 +274,10 @@ export const FactureDetail = () => {
           <Paper sx={cardSx}>
             <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
               <Typography variant="h4" fontWeight={800} sx={{ color: '#fff' }}>
-                Facture N° {facture.numero}
+                {t('invoiceDetail.title')} {facture.numero}
               </Typography>
               <Chip label={facture.statut} color={statusColor(facture.statut)} />
-              {facture.validated_by_admin && (
-                <Chip
-                  icon={<CheckCircle />}
-                  label={`Validée par ${facture.validated_by || 'admin'}`}
-                  color="success"
-                  variant="outlined"
-                />
-              )}
+
             </Box>
           </Paper>
         </Grid>
@@ -267,15 +286,15 @@ export const FactureDetail = () => {
         <Grid item xs={12} md={6}>
           <Paper sx={cardSx}>
             <Typography variant="h6" fontWeight={700} sx={{ color: '#D4A853', mb: 2 }}>
-              Informations Facture
+              {t('invoiceDetail.sections.invoiceInfo')}
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.8 }}>
               <Typography sx={{ color: 'rgba(255,255,255,0.8)' }}>
-                <b>Date :</b> {new Date(facture.date_creation).toLocaleDateString('fr-FR')}
+                <b>{t('invoiceDetail.fields.date')} :</b> {new Date(facture.date_creation).toLocaleDateString('fr-FR')}
               </Typography>
               {facture.date_echeance && (
                 <Typography sx={{ color: 'rgba(255,255,255,0.8)' }}>
-                  <b>Échéance :</b> {new Date(facture.date_echeance).toLocaleDateString('fr-FR')}
+                  <b>{t('invoiceDetail.fields.dueDate')} :</b> {new Date(facture.date_echeance).toLocaleDateString('fr-FR')}
                 </Typography>
               )}
               {facture.mode_paiement && (
@@ -311,7 +330,7 @@ export const FactureDetail = () => {
         <Grid item xs={12} md={6}>
           <Paper sx={cardSx}>
             <Typography variant="h6" fontWeight={700} sx={{ color: '#D4A853', mb: 2 }}>
-              Client
+              {t('invoiceDetail.sections.client')}
             </Typography>
             {client ? (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.8 }}>
@@ -329,7 +348,7 @@ export const FactureDetail = () => {
                 )}
               </Box>
             ) : (
-              <Typography sx={{ color: 'rgba(255,255,255,0.4)' }}>Client non trouvé</Typography>
+              <Typography sx={{ color: 'rgba(255,255,255,0.4)' }}>{t('invoiceDetail.messages.clientNotFound')}</Typography>
             )}
           </Paper>
         </Grid>
@@ -338,17 +357,17 @@ export const FactureDetail = () => {
         <Grid item xs={12}>
           <Paper sx={cardSx}>
             <Typography variant="h6" fontWeight={700} sx={{ color: '#D4A853', mb: 2 }}>
-              Articles
+              {t('invoiceDetail.sections.articles')}
             </Typography>
             <Table size="small">
               <TableHead>
                 <TableRow sx={{ '& th': { color: 'rgba(255,255,255,0.6)', fontWeight: 700, borderColor: 'rgba(255,255,255,0.08)' } }}>
-                  <TableCell>Désignation</TableCell>
-                  <TableCell align="center">Qté</TableCell>
-                  <TableCell align="right">Prix Unit.</TableCell>
-                  <TableCell align="center">Remise</TableCell>
-                  <TableCell align="center">TVA</TableCell>
-                  <TableCell align="right">Total HT</TableCell>
+                  <TableCell>{t('invoiceDetail.fields.designation')}</TableCell>
+                  <TableCell align="center">{t('invoiceDetail.fields.quantity')}</TableCell>
+                  <TableCell align="right">{t('invoiceDetail.fields.unitPrice')}</TableCell>
+                  <TableCell align="center">{t('invoiceDetail.fields.discount')}</TableCell>
+                  <TableCell align="center">{t('invoiceDetail.fields.vat')}</TableCell>
+                  <TableCell align="right">{t('invoiceDetail.fields.totalHT')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -376,7 +395,7 @@ export const FactureDetail = () => {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={6} align="center" sx={{ color: 'rgba(255,255,255,0.4)' }}>
-                      Aucun article
+                      {t('invoiceDetail.messages.noArticles')}
                     </TableCell>
                   </TableRow>
                 )}
@@ -389,11 +408,11 @@ export const FactureDetail = () => {
         <Grid item xs={12} md={5} sx={{ ml: 'auto' }}>
           <Paper sx={cardSx}>
             <Typography variant="h6" fontWeight={700} sx={{ color: '#D4A853', mb: 2 }}>
-              Récapitulatif
+              {t('invoiceDetail.sections.summary')}
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               <Box display="flex" justifyContent="space-between">
-                <Typography sx={{ color: 'rgba(255,255,255,0.7)' }}>Total HT</Typography>
+                <Typography sx={{ color: 'rgba(255,255,255,0.7)' }}>{t('invoiceDetail.fields.totalHT')}</Typography>
                 <Typography sx={{ color: '#fff', fontWeight: 600 }}>
                   {formatMoney(facture.total_ht, devise)}
                 </Typography>
@@ -402,14 +421,14 @@ export const FactureDetail = () => {
                 <>
                   <Box display="flex" justifyContent="space-between">
                     <Typography sx={{ color: '#ef4444' }}>
-                      Remise globale ({facture.remise_globale}%)
+                      {t('invoiceDetail.fields.globalDiscount')} ({facture.remise_globale}%)
                     </Typography>
                     <Typography sx={{ color: '#ef4444', fontWeight: 600 }}>
                       -{formatMoney(facture.remise_montant, devise)}
                     </Typography>
                   </Box>
                   <Box display="flex" justifyContent="space-between">
-                    <Typography sx={{ color: 'rgba(255,255,255,0.7)' }}>Après remise</Typography>
+                    <Typography sx={{ color: 'rgba(255,255,255,0.7)' }}>{t('invoiceDetail.fields.afterDiscount')}</Typography>
                     <Typography sx={{ color: '#fff', fontWeight: 600 }}>
                       {formatMoney(facture.total_apres_remise, devise)}
                     </Typography>
@@ -417,7 +436,7 @@ export const FactureDetail = () => {
                 </>
               )}
               <Box display="flex" justifyContent="space-between">
-                <Typography sx={{ color: 'rgba(255,255,255,0.7)' }}>TVA</Typography>
+                <Typography sx={{ color: 'rgba(255,255,255,0.7)' }}>{t('invoiceDetail.fields.totalVAT')}</Typography>
                 <Typography sx={{ color: '#fff', fontWeight: 600 }}>
                   {formatMoney(facture.tva, devise)}
                 </Typography>
@@ -425,7 +444,7 @@ export const FactureDetail = () => {
               <Divider sx={{ borderColor: 'rgba(255,255,255,0.08)', my: 1 }} />
               <Box display="flex" justifyContent="space-between" alignItems="center">
                 <Typography variant="h6" fontWeight={700} sx={{ color: '#fff' }}>
-                  Total TTC
+                  {t('invoiceDetail.fields.totalTTC')}
                 </Typography>
                 <Typography variant="h5" fontWeight={800} sx={{ color: '#D4A853' }}>
                   {formatMoney(facture.total_ttc, devise)}
@@ -460,15 +479,60 @@ export const FactureDetail = () => {
             </Paper>
           </Grid>
         )}
+
+        {/* ── Lien public QR Code ── */}
+        <Grid item xs={12}>
+          <Paper sx={cardSx}>
+            <Typography variant="h6" fontWeight={700} sx={{ color: '#D4A853', mb: 2 }}>
+              Accès public via QR Code
+            </Typography>
+            <Typography sx={{ color: 'rgba(255,255,255,0.7)', mb: 2, fontSize: '0.9rem' }}>
+              Scannez le QR code sur le PDF pour accéder à cette facture depuis un téléphone et la télécharger.
+            </Typography>
+            <Box
+              sx={{
+                background: 'rgba(212,168,83,0.1)',
+                border: '1px solid rgba(212,168,83,0.3)',
+                borderRadius: 2,
+                p: 2,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+                flexWrap: 'wrap'
+              }}
+            >
+              <Typography sx={{ color: '#D4A853', fontFamily: 'monospace', fontSize: '0.85rem', flex: 1 }}>
+                {window.location.origin}/facture/{id}
+              </Typography>
+              <Button
+                size="small"
+                onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/facture/${id}`);
+                  notify.success('Lien copié !');
+                }}
+                sx={{ color: '#D4A853', borderColor: '#D4A853' }}
+                variant="outlined"
+              >
+                Copier le lien
+              </Button>
+            </Box>
+          </Paper>
+        </Grid>
       </Grid>
 
       {/* ── Modal Signature ── */}
       <SignatureModal
         open={signatureOpen}
         onClose={() => setSignatureOpen(false)}
-        onSave={(dataUrl) => {
+        onSave={async (dataUrl) => {
           setSignatureDataUrl(dataUrl);
-          notify.success('Signature ajoutée — sera incluse dans le PDF');
+          // Sauvegarder la signature dans la DB
+          try {
+            await updateFacture(id, { signature: dataUrl });
+            notify.success('Signature sauvegardée dans la facture');
+          } catch (e) {
+            notify.success('Signature ajoutée — sera incluse dans le PDF');
+          }
         }}
       />
     </Box>

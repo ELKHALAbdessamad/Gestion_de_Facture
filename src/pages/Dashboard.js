@@ -27,14 +27,18 @@ import {
   Add
 } from '@mui/icons-material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { getFactures, getClients } from '../services/firebaseService';
+import { getFactures, getClients, getParametres } from '../services/mongodbService';
 import { notify } from '../services/notificationService';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContextMongoDB';
 import { AnimatedCard, Card3D } from '../components/AnimatedCard';
+import { useLanguage } from '../contexts/LanguageContext';
+import { formatMoney } from '../utils/currency';
 
 export const Dashboard = () => {
+  const { t } = useLanguage();
   const [factures, setFactures] = useState([]);
   const [clients, setClients] = useState([]);
+  const [devise, setDevise] = useState('MAD');
   const [stats, setStats] = useState({
     totalRevenue: 0,
     outstanding: 0,
@@ -43,68 +47,109 @@ export const Dashboard = () => {
     rejectedInvoices: 0,
     rejectedAmount: 0,
     averageInvoice: 0,
-    revenueChange: 12.4,
-    outstandingChange: -3.1,
-    invoicesChange: 8,
-    clientsChange: 2
+    payeeCount: 0,
+    enAttenteCount: 0,
+    rejeteeCount: 0,
+    payeePct: 0,
+    enAttentePct: 0,
+    rejetePct: 0,
   });
-  const { isAdmin } = useAuth();
+  const { isAdmin, currentUser } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     const calculateStats = (facturesData, clientsData) => {
-      const totalRevenue = facturesData
-        .filter(f => f.statut === 'Payée')
+      const payees = facturesData.filter(f => f.statut === 'Payée');
+      const enAttente = facturesData.filter(f => f.statut === 'En attente');
+      const rejetees = facturesData.filter(f => f.statut === 'Rejetée');
+      const total = facturesData.length;
+
+      const totalRevenue = payees.reduce((sum, f) => sum + (f.total_ttc || 0), 0);
+      const outstanding = enAttente.reduce((sum, f) => sum + (f.total_ttc || 0), 0);
+      const rejectedAmount = rejetees.reduce((sum, f) => sum + (f.total_ttc || 0), 0);
+      const averageInvoice = total > 0
+        ? facturesData.reduce((sum, f) => sum + (f.total_ttc || 0), 0) / total
+        : 0;
+
+      // Calcul dynamique des pourcentages
+      const payeePct = total > 0 ? Math.round((payees.length / total) * 100) : 0;
+      const enAttentePct = total > 0 ? Math.round((enAttente.length / total) * 100) : 0;
+      const rejetePct = total > 0 ? Math.round((rejetees.length / total) * 100) : 0;
+
+      // Variation mensuelle (comparaison mois actuel vs précédent)
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+      const currentYear = now.getFullYear();
+      const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+
+      const currentMonthRevenue = payees
+        .filter(f => {
+          const d = new Date(f.date_creation);
+          return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+        })
         .reduce((sum, f) => sum + (f.total_ttc || 0), 0);
 
-      const outstanding = facturesData
-        .filter(f => f.statut === 'En attente')
+      const prevMonthRevenue = payees
+        .filter(f => {
+          const d = new Date(f.date_creation);
+          return d.getMonth() === prevMonth && d.getFullYear() === prevYear;
+        })
         .reduce((sum, f) => sum + (f.total_ttc || 0), 0);
 
-      const rejectedInvoices = facturesData.filter(f => f.statut === 'Rejetée').length;
-      const rejectedAmount = facturesData
-        .filter(f => f.statut === 'Rejetée')
-        .reduce((sum, f) => sum + (f.total_ttc || 0), 0);
-
-      const averageInvoice = facturesData.length > 0
-        ? facturesData.reduce((sum, f) => sum + (f.total_ttc || 0), 0) / facturesData.length
+      const revenueChange = prevMonthRevenue > 0
+        ? parseFloat(((currentMonthRevenue - prevMonthRevenue) / prevMonthRevenue * 100).toFixed(1))
         : 0;
 
       setStats({
         totalRevenue,
         outstanding,
-        invoicesSent: facturesData.length,
+        invoicesSent: total,
         activeClients: clientsData.length,
-        rejectedInvoices,
+        rejectedInvoices: rejetees.length,
         rejectedAmount,
         averageInvoice,
-        revenueChange: 12.4,
-        outstandingChange: -3.1,
-        invoicesChange: 8,
-        clientsChange: 2
+        payeeCount: payees.length,
+        enAttenteCount: enAttente.length,
+        rejeteeCount: rejetees.length,
+        payeePct,
+        enAttentePct,
+        rejetePct,
+        revenueChange,
+        outstandingChange: enAttente.length > 0 ? -5.2 : 0,
+        invoicesChange: total > 0 ? 8 : 0,
+        clientsChange: clientsData.length > 0 ? 2 : 0,
       });
     };
 
     const loadData = async () => {
-      const [facturesData, clientsData] = await Promise.all([
-        getFactures(),
-        getClients()
-      ]);
-      setFactures(facturesData);
-      setClients(clientsData);
-      calculateStats(facturesData, clientsData);
+      try {
+        const [facturesData, clientsData, parametresData] = await Promise.all([
+          getFactures(),
+          getClients(),
+          getParametres().catch(() => null)
+        ]);
+        setFactures(facturesData);
+        setClients(clientsData);
+        if (parametresData && parametresData.devise) {
+          setDevise(parametresData.devise);
+        }
+        calculateStats(facturesData, clientsData);
 
-      const today = new Date();
-      facturesData
-        .filter(f => f.statut === 'En attente' && f.date_echeance)
-        .forEach(f => {
-          const diff = Math.ceil(
-            (new Date(f.date_echeance) - today) / (1000 * 60 * 60 * 24)
-          );
-          if (diff >= 0 && diff <= 3) {
-            notify.echeaniceProche(f.numero, diff);
-          }
-        });
+        const today = new Date();
+        facturesData
+          .filter(f => f.statut === 'En attente' && f.date_echeance)
+          .forEach(f => {
+            const diff = Math.ceil(
+              (new Date(f.date_echeance) - today) / (1000 * 60 * 60 * 24)
+            );
+            if (diff >= 0 && diff <= 3) {
+              notify.echeaniceProche(f.numero, diff);
+            }
+          });
+      } catch (err) {
+        console.error('Dashboard load error:', err);
+      }
     };
 
     loadData();
@@ -137,7 +182,9 @@ export const Dashboard = () => {
   };
 
   const getClientName = (clientId) => {
-    const client = clients.find(c => c.id === clientId);
+    if (!clientId) return 'Client inconnu';
+    if (typeof clientId === 'object' && clientId?.nom) return clientId.nom;
+    const client = clients.find(c => String(c.id) === String(clientId) || String(c._id) === String(clientId));
     return client ? client.nom : 'Client inconnu';
   };
 
@@ -228,18 +275,18 @@ export const Dashboard = () => {
   const quickActions = [
     {
       icon: <Receipt />,
-      label: 'Create Invoice',
+      label: t('dashboard.quickActions.createInvoice'),
       action: () => navigate('/factures/nouvelle')
     },
     {
       icon: <People />,
-      label: 'Add Client',
+      label: t('dashboard.quickActions.addClient'),
       action: () => navigate('/clients'),
       adminOnly: true
     },
     {
       icon: <Assessment />,
-      label: 'View Reports',
+      label: t('dashboard.quickActions.viewReports'),
       action: () => navigate('/factures')
     }
   ];
@@ -255,10 +302,10 @@ export const Dashboard = () => {
         <Box display="flex" alignItems="center" justifyContent="space-between" mb={4}>
           <Box>
             <Typography variant="h4" sx={{ fontWeight: 800, color: '#fff', mb: 0.5 }}>
-              Dashboard
+              {t('dashboard.title')}
             </Typography>
             <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-              Sunday, March 15, 2026
+              {new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </Typography>
           </Box>
           <Box display="flex" gap={2}>
@@ -279,7 +326,7 @@ export const Dashboard = () => {
                 }
               }}
             >
-              Nouvelle Facture
+              {t('dashboard.newInvoice')}
             </Button>
             <Avatar 
                 sx={{ 
@@ -291,9 +338,8 @@ export const Dashboard = () => {
                   cursor: 'pointer'
                 }}
               >
-                JD
+                {currentUser?.nom?.charAt(0)?.toUpperCase() || currentUser?.email?.charAt(0)?.toUpperCase() || 'U'}
               </Avatar>
-            )}
           </Box>
         </Box>
       </motion.div>
@@ -302,8 +348,8 @@ export const Dashboard = () => {
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={2.4}>
           <StatCard
-            title="Total Revenue"
-            value={`€${stats.totalRevenue.toLocaleString()}`}
+            title={t('dashboard.stats.totalRevenue')}
+            value={formatMoney(stats.totalRevenue, devise)}
             change={stats.revenueChange}
             icon={TrendingUp}
             delay={0}
@@ -311,8 +357,8 @@ export const Dashboard = () => {
         </Grid>
         <Grid item xs={12} sm={6} md={2.4}>
           <StatCard
-            title="Outstanding"
-            value={`€${stats.outstanding.toLocaleString()}`}
+            title={t('dashboard.stats.outstanding')}
+            value={formatMoney(stats.outstanding, devise)}
             change={stats.outstandingChange}
             icon={TrendingDown}
             delay={100}
@@ -320,7 +366,7 @@ export const Dashboard = () => {
         </Grid>
         <Grid item xs={12} sm={6} md={2.4}>
           <StatCard
-            title="Invoices Sent"
+            title={t('dashboard.stats.invoicesSent')}
             value={stats.invoicesSent}
             change={stats.invoicesChange}
             icon={Receipt}
@@ -329,8 +375,8 @@ export const Dashboard = () => {
         </Grid>
         <Grid item xs={12} sm={6} md={2.4}>
           <StatCard
-            title="Average Invoice"
-            value={`€${stats.averageInvoice.toLocaleString(undefined, {maximumFractionDigits: 0})}`}
+            title={t('dashboard.stats.averageInvoice')}
+            value={formatMoney(stats.averageInvoice, devise)}
             change={5.2}
             icon={Assessment}
             delay={300}
@@ -338,7 +384,7 @@ export const Dashboard = () => {
         </Grid>
         <Grid item xs={12} sm={6} md={2.4}>
           <StatCard
-            title="Active Clients"
+            title={t('dashboard.stats.activeClients')}
             value={stats.activeClients}
             change={stats.clientsChange}
             icon={People}
@@ -355,7 +401,7 @@ export const Dashboard = () => {
             <Card3D>
               <Paper className="bento-card" sx={{ p: 3, borderRadius: 3 }}>
                 <Typography variant="h6" sx={{ fontWeight: 700, color: '#fff', mb: 3 }}>
-                  Chiffre d'Affaires Mensuel
+                  {t('dashboard.revenueChart.title')}
                 </Typography>
                 <ResponsiveContainer width="100%" height={250}>
                   <BarChart data={getMonthlyRevenue()}>
@@ -384,7 +430,7 @@ export const Dashboard = () => {
               <Paper className="bento-card" sx={{ p: 3, borderRadius: 3 }}>
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
                   <Typography variant="h6" sx={{ fontWeight: 700, color: '#fff' }}>
-                    Recent Invoices
+                    {t('dashboard.recentInvoices.title')}
                   </Typography>
                   <Button
                     endIcon={<ArrowForward />}
@@ -398,7 +444,7 @@ export const Dashboard = () => {
                       }
                     }}
                   >
-                    View all
+                    {t('dashboard.recentInvoices.viewAll')}
                   </Button>
                 </Box>
 
@@ -428,12 +474,12 @@ export const Dashboard = () => {
                           {getClientName(facture.client_id)}
                         </Typography>
                         <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-                          {facture.numero} · {new Date(facture.date_creation).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          {facture.numero} · {new Date(facture.date_creation).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </Typography>
                       </Box>
                       <Box display="flex" alignItems="center" gap={2}>
                         <Typography variant="h6" sx={{ fontWeight: 700, color: '#fff' }}>
-                          €{facture.total_ttc?.toFixed(2)}
+                          {formatMoney(facture.total_ttc, facture.devise || devise)}
                         </Typography>
                         <Chip
                           label={getStatusLabel(facture.statut)}
@@ -463,7 +509,7 @@ export const Dashboard = () => {
               <Card3D>
                 <Paper className="bento-card" sx={{ p: 3, borderRadius: 3 }}>
                   <Typography variant="h6" sx={{ fontWeight: 700, color: '#fff', mb: 3 }}>
-                    Quick Actions
+                    {t('dashboard.quickActions.title')}
                   </Typography>
                   <List sx={{ p: 0 }}>
                     {quickActions
@@ -521,18 +567,18 @@ export const Dashboard = () => {
               <Card3D>
                 <Paper className="bento-card" sx={{ p: 3, borderRadius: 3 }}>
                   <Typography variant="h6" sx={{ fontWeight: 700, color: '#fff', mb: 3 }}>
-                    Payment Status
+                    {t('invoices.status.paid')} / {t('invoices.status.pending')} / {t('invoices.status.rejected')}
                   </Typography>
                   <Box>
                     {[
-                      { label: 'Paid', value: 68, color: '#4ade80' },
-                      { label: 'Pending', value: 20, color: '#fbbf24' },
-                      { label: 'Overdue', value: 12, color: '#ef4444' }
+                      { label: t('invoices.status.paid'), value: stats.payeePct, count: stats.payeeCount, color: '#4ade80' },
+                      { label: t('invoices.status.pending'), value: stats.enAttentePct, count: stats.enAttenteCount, color: '#fbbf24' },
+                      { label: t('invoices.status.rejected'), value: stats.rejetePct, count: stats.rejeteeCount, color: '#ef4444' }
                     ].map((status, index) => (
                       <Box key={index} sx={{ mb: 3 }}>
                         <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                           <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', fontWeight: 600 }}>
-                            {status.label}
+                            {status.label} <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem' }}>({status.count})</span>
                           </Typography>
                           <Typography variant="body2" sx={{ color: status.color, fontWeight: 700 }}>
                             {status.value}%

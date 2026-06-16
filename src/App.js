@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContextMongoDB';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { PrivateRoute } from './routes/PrivateRoute';
 import { Layout } from './components/Layout';
@@ -14,10 +14,13 @@ import { Dashboard } from './pages/Dashboard';
 import { Factures } from './pages/Factures';
 import { FactureForm } from './pages/FactureForm';
 import { FactureDetail } from './pages/FactureDetail';
+import { FacturePublic } from './pages/FacturePublic';
 import { Clients } from './pages/Clients';
 import { Articles } from './pages/Articles';
 import { Categories } from './pages/Categories';
 import { Parametres } from './pages/Parametres';
+import { TestEmail } from './pages/TestEmail';
+import { Archive } from './pages/Archive';
 
 const theme = createTheme({
   palette: {
@@ -90,25 +93,27 @@ const theme = createTheme({
 function App() {
   return (
     <LanguageProvider>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <ToastContainer
-          position="top-right"
-          autoClose={4000}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          pauseOnHover
-          draggable
-          theme="dark"
-          style={{ zIndex: 9999 }}
-        />
-        <AuthProvider>
+      <AuthProvider>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <ToastContainer
+            position="top-right"
+            autoClose={4000}
+            hideProgressBar={false}
+            newestOnTop
+            closeOnClick
+            pauseOnHover
+            draggable
+            theme="dark"
+            style={{ zIndex: 9999 }}
+          />
           <Router>
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            {/* Route publique pour scan QR code */}
+            <Route path="/facture/:id" element={<FacturePublic />} />
             <Route
               path="/dashboard"
               element={
@@ -199,10 +204,30 @@ function App() {
                 </PrivateRoute>
               }
             />
+            <Route
+              path="/test-email"
+              element={
+                <PrivateRoute adminOnly>
+                  <Layout>
+                    <TestEmail />
+                  </Layout>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/archive"
+              element={
+                <PrivateRoute>
+                  <Layout>
+                    <Archive />
+                  </Layout>
+                </PrivateRoute>
+              }
+            />
           </Routes>
-        </Router>
+          </Router>
+        </ThemeProvider>
       </AuthProvider>
-    </ThemeProvider>
     </LanguageProvider>
   );
 }

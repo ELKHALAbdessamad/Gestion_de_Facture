@@ -12,6 +12,11 @@ export const formatMoney = (amount, devise = 'MAD') => {
 
 export const getActiveEntreprise = (parametres) => {
   if (!parametres) return {};
+  if (parametres.entreprises?.length) {
+    const index = parametres.entreprise_active ?? 0;
+    return parametres.entreprises[index] || parametres.entreprise || {};
+  }
+  // fallback anciens noms
   if (parametres.societes?.length) {
     const index = parametres.societe_active ?? 0;
     return parametres.societes[index] || parametres.entreprise || {};

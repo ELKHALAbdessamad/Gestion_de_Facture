@@ -152,12 +152,12 @@ export const LandingPage = () => {
                   color: '#fff'
                 }}
               >
-                <span className="gradient-text">Facture</span>.net
+                <span className="gradient-text">Nova</span>Fact
               </Typography>
             </Box>
-            
+
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button 
+              <Button
                 variant="outlined"
                 onClick={() => navigate('/login')}
                 sx={{ 
@@ -1098,7 +1098,7 @@ export const LandingPage = () => {
                     colors="primary:#D4A853"
                   />
                   <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                    <span className="gradient-text">Facture</span>.net
+                    <span className="gradient-text">Nova</span>Fact
                   </Typography>
                 </Box>
                 <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
@@ -1172,7 +1172,7 @@ export const LandingPage = () => {
                 align="center" 
                 sx={{ color: 'rgba(255, 255, 255, 0.5)' }}
               >
-                © 2026 Facture.net - Tous droits réservés
+                © 2026 NovaFact - Tous droits réservés
               </Typography>
             </Box>
           </Container>

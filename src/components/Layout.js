@@ -22,9 +22,11 @@ import {
   Inventory,
   Category,
   Settings,
-  Logout
+  Logout,
+  Archive,
+  Work as WorkIcon
 } from '@mui/icons-material';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContextMongoDB';
 import { useLanguage } from '../contexts/LanguageContext';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
@@ -49,19 +51,22 @@ export const Layout = ({ children }) => {
   const menuItems = [
     { text: t('menu.dashboard'), icon: <Dashboard />, path: '/dashboard' },
     { text: t('menu.invoices'), icon: <Receipt />, path: '/factures' },
+    { text: 'Archives', icon: <Archive />, path: '/archive' },
     ...(isAdmin ? [
       { text: t('menu.clients'), icon: <People />, path: '/clients' },
       { text: t('menu.articles'), icon: <Inventory />, path: '/articles' },
       { text: t('menu.categories'), icon: <Category />, path: '/categories' },
       { text: t('menu.settings'), icon: <Settings />, path: '/parametres' }
-    ] : [])
+    ] : [
+      { text: t('menu.clients'), icon: <People />, path: '/clients' },
+    ])
   ];
 
   const drawer = (
     <Box sx={{ background: '#080807', height: '100%' }}>
       <Toolbar sx={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
         <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 700 }}>
-          <span className="gradient-text">Facture</span>.net
+          <span className="gradient-text">Nova</span>Fact
         </Typography>
       </Toolbar>
       <List sx={{ px: 1, pt: 2 }}>

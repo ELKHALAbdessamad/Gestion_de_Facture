@@ -5,7 +5,9 @@ import * as XLSX from 'xlsx';
  */
 export const exportFacturesToExcel = (factures, clients) => {
   const getClientName = (clientId) => {
-    const client = clients.find(c => c.id === clientId);
+    if (!clientId) return 'Client inconnu';
+    if (typeof clientId === 'object' && clientId?.nom) return clientId.nom;
+    const client = clients.find(c => String(c.id) === String(clientId) || String(c._id) === String(clientId));
     return client ? client.nom : 'Client inconnu';
   };
 

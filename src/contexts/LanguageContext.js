@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { translations } from '../i18n/translations';
+import { translationsComplete as translations } from '../i18n/translations';
 
 const LanguageContext = createContext();
 
@@ -13,11 +13,7 @@ export const useLanguage = () => {
 
 export const LanguageProvider = ({ children }) => {
   const [language, setLanguage] = useState(() => {
-    // Récupérer la langue depuis localStorage ou utiliser le français par défaut
-    const savedLang = localStorage.getItem('language');
-    if (savedLang) return savedLang;
-    
-    // Français par défaut
+    // Français par défaut toujours
     return 'fr';
   });
 

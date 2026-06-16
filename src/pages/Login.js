@@ -10,11 +10,10 @@ import {
   Alert,
   InputAdornment,
   IconButton,
-  Divider
 } from '@mui/material';
-import { Visibility, VisibilityOff, Email, Lock } from '@mui/icons-material';
-import { loginUser } from '../services/firebaseService';
-import { LordIcon, Icons } from '../components/LordIcon';
+import { Visibility, VisibilityOff, Email, Lock, ReceiptLong } from '@mui/icons-material';
+import { useAuth } from '../contexts/AuthContextMongoDB';
+import { verify2FA } from '../services/mongodbService';
 import { AnimatedInput } from '../components/AnimatedInput';
 import { Card3D, FloatingElement } from '../components/AnimatedCard';
 import { ParallaxBackground } from '../components/ParallaxBackground';
@@ -26,8 +25,12 @@ export const Login = () => {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [pending2FA, setPending2FA] = useState(false);
+  const [tempToken, setTempToken] = useState('');
+  const [totpCode, setTotpCode] = useState('');
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { login } = useAuth();
 
   useEffect(() => {
     const prevHtml = document.documentElement.style.overflow;
@@ -46,37 +49,32 @@ export const Login = () => {
     setLoading(true);
     
     try {
-      console.log('Tentative de connexion avec:', email);
-      const result = await loginUser(email, password);
-      console.log('Connexion réussie:', result);
-      
-      setTimeout(() => {
-        console.log('Redirection vers /dashboard');
-        navigate('/dashboard');
-      }, 100);
+      const data = await login(email, password);
+      if (data.requires2fa) {
+        setTempToken(data.tempToken);
+        setPending2FA(true);
+        setLoading(false);
+        return;
+      }
+      setTimeout(() => navigate('/dashboard'), 100);
     } catch (err) {
-      console.error('Erreur de connexion:', err);
       setError(err.message || t('auth.login.error'));
       setLoading(false);
     }
   };
 
-  const testAccounts = [
-    {
-      type: t('auth.login.admin'),
-      email: 'admin@test.com',
-      password: 'admin123',
-      icon: 'https://cdn.lordicon.com/lecprnjb.json',
-      color: '#D4A853'
-    },
-    {
-      type: t('auth.login.user'),
-      email: 'user@test.com',
-      password: 'user123',
-      icon: Icons.user,
-      color: '#60a5fa'
+  const handle2FASubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      await verify2FA(tempToken, totpCode);
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.response?.data?.error || 'Code incorrect');
+      setLoading(false);
     }
-  ];
+  };
 
   const fillTestAccount = (account) => {
     setEmail(account.email);
@@ -147,12 +145,7 @@ export const Login = () => {
                       ease: "easeInOut"
                     }}
                   >
-                    <LordIcon 
-                      src={Icons.invoice}
-                      trigger="loop"
-                      size={100}
-                      colors="primary:#D4A853,secondary:#F4D03F"
-                    />
+                    <ReceiptLong sx={{ fontSize: 80, color: '#D4A853' }} />
                   </motion.div>
                 </Box>
 
@@ -167,7 +160,7 @@ export const Login = () => {
                     position: 'relative'
                   }}
                 >
-                  <span className="gradient-text">{t('auth.login.title').split('.')[0]}</span>.{t('auth.login.title').split('.')[1] || 'net'}
+                  <span className="gradient-text">Nova</span>Fact
                 </Typography>
                 
                 <Typography 
@@ -205,6 +198,45 @@ export const Login = () => {
                   </motion.div>
                 )}
                 
+                {pending2FA ? (
+                  <form onSubmit={handle2FASubmit}>
+                    <Box textAlign="center" mb={3}>
+                      <Typography variant="h6" sx={{ color: '#D4A853', fontWeight: 700 }}>
+                        🔐 Vérification en 2 étapes
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mt: 1 }}>
+                        Entrez le code à 6 chiffres de votre application Google Authenticator
+                      </Typography>
+                    </Box>
+                    <AnimatedInput
+                      label="Code à 6 chiffres"
+                      value={totpCode}
+                      onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      required
+                      inputProps={{ maxLength: 6, style: { textAlign: 'center', fontSize: '1.5rem', letterSpacing: '0.5rem' } }}
+                    />
+                    <Button
+                      type="submit"
+                      fullWidth
+                      variant="contained"
+                      disabled={loading || totpCode.length !== 6}
+                      sx={{
+                        mt: 2, py: 1.8, borderRadius: 2,
+                        background: 'linear-gradient(135deg, #D4A853 0%, #F4D03F 100%)',
+                        color: '#080807', fontWeight: 700, fontSize: '1rem'
+                      }}
+                    >
+                      {loading ? '...' : 'Vérifier →'}
+                    </Button>
+                    <Button
+                      fullWidth
+                      onClick={() => { setPending2FA(false); setTempToken(''); setTotpCode(''); setError(''); }}
+                      sx={{ mt: 1, color: 'rgba(255,255,255,0.5)', textTransform: 'none' }}
+                    >
+                      ← Retour
+                    </Button>
+                  </form>
+                ) : (
                 <form onSubmit={handleSubmit}>
                   <motion.div
                     initial={{ opacity: 0, x: -20 }}
@@ -308,6 +340,7 @@ export const Login = () => {
                     </motion.div>
                   </motion.div>
                 </form>
+                )} {/* fin ternaire 2FA */}
 
                 <Box textAlign="center" mt={2}>
                   <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
@@ -331,81 +364,6 @@ export const Login = () => {
                     </Button>
                   </Typography>
                 </Box>
-                
-                <Divider sx={{ my: 4, borderColor: 'rgba(255, 255, 255, 0.1)' }}>
-                  <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', px: 2 }}>
-                    OU
-                  </Typography>
-                </Divider>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.5 }}
-                >
-                  <Box 
-                    sx={{ 
-                      p: 3, 
-                      borderRadius: 2,
-                      background: 'linear-gradient(135deg, rgba(212, 168, 83, 0.1) 0%, rgba(244, 208, 63, 0.05) 100%)',
-                      border: '1px solid rgba(212, 168, 83, 0.2)'
-                    }}
-                  >
-                    <Typography 
-                      variant="subtitle2" 
-                      align="center" 
-                      className="gradient-text"
-                      sx={{ mb: 3, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}
-                    >
-                      {t('auth.login.testAccounts')}
-                    </Typography>
-                    
-                    <Box display="flex" gap={2} flexWrap="wrap">
-                      {testAccounts.map((account, index) => (
-                        <motion.div
-                          key={index}
-                          style={{ flex: 1, minWidth: '200px' }}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <Box
-                            onClick={() => fillTestAccount(account)}
-                            sx={{
-                              p: 2,
-                              borderRadius: 2,
-                              background: 'rgba(255, 255, 255, 0.03)',
-                              border: '1px solid rgba(255, 255, 255, 0.1)',
-                              cursor: 'pointer',
-                              transition: 'all 0.3s ease',
-                              '&:hover': {
-                                background: 'rgba(255, 255, 255, 0.05)',
-                                border: `1px solid ${account.color}50`,
-                              }
-                            }}
-                          >
-                            <Box display="flex" alignItems="center" gap={1} mb={1}>
-                              <LordIcon 
-                                src={account.icon}
-                                trigger="hover"
-                                size={24}
-                                colors={`primary:${account.color}`}
-                              />
-                              <Typography variant="body2" fontWeight={700} sx={{ color: account.color }}>
-                                {account.type}
-                              </Typography>
-                            </Box>
-                            <Typography variant="caption" display="block" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                              {account.email}
-                            </Typography>
-                            <Typography variant="caption" display="block" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                              {account.password}
-                            </Typography>
-                          </Box>
-                        </motion.div>
-                      ))}
-                    </Box>
-                  </Box>
-                </motion.div>
 
                 {/* Decorative elements */}
                 <FloatingElement duration={3} delay={0}>

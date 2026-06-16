@@ -16,7 +16,7 @@ import {
   StepLabel
 } from '@mui/material';
 import { Visibility, VisibilityOff, Email, Lock, Person, Business } from '@mui/icons-material';
-import { registerUser } from '../services/firebaseService';
+import { useAuth } from '../contexts/AuthContextMongoDB';
 import { LordIcon, Icons } from '../components/LordIcon';
 import { AnimatedInput } from '../components/AnimatedInput';
 import { Card3D } from '../components/AnimatedCard';
@@ -38,6 +38,7 @@ export const Register = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { register } = useAuth();
 
   const steps = [
     t('auth.register.steps.personal'),
@@ -86,7 +87,7 @@ export const Register = () => {
     setLoading(true);
 
     try {
-      await registerUser({
+      await register({
         email: formData.email.trim(),
         password: formData.password,
         nom: formData.nom.trim(),

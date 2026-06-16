@@ -6,17 +6,19 @@ import {
 } from '@mui/material';
 import { Add, Visibility, GetApp, Edit, Delete, TableChart, Search, Archive } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { getFactures, deleteFacture, getClients } from '../services/firebaseService';
-import { getArticles, getParametres } from '../services/jsonService';
+import { getFactures, deleteFacture, getClients } from '../services/mongodbService';
+import { getArticles, getParametres } from '../services/mongodbService';
 import { downloadFacturePDF } from '../utils/pdfGenerator';
 import { exportFacturesToExcel } from '../utils/excelExporter';
 import { notify } from '../services/notificationService';
 import { formatMoney } from '../utils/currency';
 import { ArchiveModal } from '../components/ArchiveModal';
 import { LordIcon, Icons } from '../components/LordIcon';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContextMongoDB';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export const Factures = () => {
+  const { t, language } = useLanguage();
   const [factures, setFactures] = useState([]);
   const [clients, setClients] = useState([]);
   const [articles, setArticles] = useState([]);
@@ -41,7 +43,9 @@ export const Factures = () => {
   };
 
   const getClientName = (clientId) => {
-    const client = clients.find(c => c.id === clientId);
+    if (!clientId) return 'Client inconnu';
+    if (typeof clientId === 'object' && clientId?.nom) return clientId.nom;
+    const client = clients.find(c => String(c.id) === String(clientId) || String(c._id) === String(clientId));
     return client ? client.nom : 'Client inconnu';
   };
 
@@ -56,7 +60,7 @@ export const Factures = () => {
     const client = clients.find(c => c.id === facture.client_id);
     if (client && parametres) {
       try {
-        await downloadFacturePDF(facture, client, articles, parametres);
+        await downloadFacturePDF(facture, client, articles, parametres, null, language);
         notify.pdfGenere(facture.numero);
       } catch (e) {
         notify.error('Erreur lors de la génération du PDF');
@@ -124,10 +128,10 @@ export const Factures = () => {
           <LordIcon src={Icons.invoice} trigger="loop" size={48} colors="primary:#D4A853" />
           <Box>
             <Typography variant="h4" fontWeight={800} sx={{ color: '#fff' }}>
-              Gestion des Factures
+              {t('invoices.title')}
             </Typography>
             <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)' }}>
-              {filteredFactures.length} facture{filteredFactures.length > 1 ? 's' : ''} —
+              {filteredFactures.length} {t('invoices.count')} —
               Total&nbsp;TTC&nbsp;: <b style={{ color: '#D4A853' }}>{formatMoney(totalTTC, devise)}</b>
             </Typography>
           </Box>
@@ -166,7 +170,7 @@ export const Factures = () => {
             onClick={() => navigate('/factures/nouvelle')}
             sx={{ borderRadius: 2, px: 3, py: 1.2, fontWeight: 700 }}
           >
-            Nouvelle Facture
+            {t('invoices.newInvoice')}
           </Button>
         </Box>
       </Box>
@@ -174,10 +178,10 @@ export const Factures = () => {
       {/* ── Mini KPIs ── */}
       <Box display="flex" gap={2} mb={3} flexWrap="wrap">
         {[
-          { label: 'Total', value: factures.length, color: '#D4A853' },
-          { label: 'Payées', value: nbPayees, color: '#4ade80' },
-          { label: 'En attente', value: nbEnAttente, color: '#fbbf24' },
-          { label: 'Rejetées', value: factures.filter(f => f.statut === 'Rejetée').length, color: '#ef4444' },
+          { label: t('invoices.filters.all'), value: factures.length, color: '#D4A853' },
+          { label: t('invoices.status.paid'), value: nbPayees, color: '#4ade80' },
+          { label: t('invoices.status.pending'), value: nbEnAttente, color: '#fbbf24' },
+          { label: t('invoices.status.rejected'), value: factures.filter(f => f.statut === 'Rejetée').length, color: '#ef4444' },
         ].map(k => (
           <Paper
             key={k.label}
@@ -198,7 +202,7 @@ export const Factures = () => {
       {/* ── Filtres ── */}
       <Box display="flex" gap={2} mb={3} flexWrap="wrap">
         <TextField
-          placeholder="Rechercher numéro ou client..."
+          placeholder={t('invoices.searchPlaceholder')}
           value={search}
           onChange={e => setSearch(e.target.value)}
           size="small"
@@ -248,7 +252,7 @@ export const Factures = () => {
         <Table>
           <TableHead>
             <TableRow>
-              {['Numéro', 'Date', 'Client', 'Total TTC', 'Statut', 'Validé', 'Actions'].map(h => (
+              {[t('invoices.table.number'), t('invoices.table.date'), t('invoices.table.client'), t('invoices.table.totalTTC'), t('invoices.table.status'), 'Validé', t('invoices.table.actions')].map(h => (
                 <TableCell
                   key={h}
                   align={h === 'Total TTC' || h === 'Actions' ? 'right' : 'left'}
@@ -263,7 +267,7 @@ export const Factures = () => {
             {filteredFactures.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} align="center" sx={{ py: 4, color: 'rgba(255,255,255,0.4)' }}>
-                  Aucune facture trouvée
+                  {t('invoices.noInvoices')}
                 </TableCell>
               </TableRow>
             ) : (

@@ -1,6 +1,20 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:3001';
+// Détecte automatiquement l'URL de l'API
+// En développement avec accès mobile, utilise l'IP locale
+// Sinon utilise localhost
+const getApiUrl = () => {
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    // Si on accède via IP (pas localhost), utilise cette IP pour l'API aussi
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      return `http://${hostname}:3001`;
+    }
+  }
+  return 'http://localhost:3001';
+};
+
+const API_URL = getApiUrl();
 
 // Articles
 export const getArticles = async () => {

@@ -6,11 +6,14 @@ import {
   TextField, IconButton, FormControl, InputLabel, Select, MenuItem, Chip
 } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
-import { getArticles, addArticle, updateArticle, deleteArticle, getCategories } from '../services/jsonService';
+import { getArticles, addArticle, updateArticle, deleteArticle, getCategories } from '../services/mongodbService';
 import { notify } from '../services/notificationService';
 import { LordIcon, Icons } from '../components/LordIcon';
 
+import { useLanguage } from '../contexts/LanguageContext';
+
 export const Articles = () => {
+  const { t } = useLanguage();
   const [articles, setArticles]   = useState([]);
   const [categories, setCategories] = useState([]);
   const [open, setOpen]           = useState(false);
@@ -25,8 +28,17 @@ export const Articles = () => {
     setCategories(c);
   };
 
-  const getCategoryName = (catId) => categories.find(c => c.id === catId)?.nom || '—';
-  const getTVA = (catId) => categories.find(c => c.id === catId)?.tva ?? '—';
+  const getCategoryName = (catId) => {
+    // Handle both string ID and populated object
+    const id = typeof catId === 'object' ? catId?.id || catId?._id?.toString() : catId;
+    return categories.find(c => c.id === id || c._id?.toString() === id)?.nom || '—';
+  };
+  
+  const getTVA = (catId) => {
+    // Handle both string ID and populated object
+    const id = typeof catId === 'object' ? catId?.id || catId?._id?.toString() : catId;
+    return categories.find(c => c.id === id || c._id?.toString() === id)?.tva ?? '—';
+  };
 
   const handleOpen = (article = null) => {
     if (article) {
@@ -71,16 +83,16 @@ export const Articles = () => {
           <LordIcon src={Icons.settings} trigger="loop" size={48} colors="primary:#D4A853" />
           <Box>
             <Typography variant="h4" fontWeight={800} sx={{ color: '#fff' }}>
-              Gestion des Articles
+              {t('articles.title')}
             </Typography>
             <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)' }}>
-              {articles.length} article{articles.length > 1 ? 's' : ''} au catalogue
+              {articles.length} {t('articles.count')}
             </Typography>
           </Box>
         </Box>
         <Button variant="contained" startIcon={<Add />} onClick={() => handleOpen()}
           sx={{ borderRadius: 2, px: 3, py: 1.5, fontWeight: 700 }}>
-          Nouvel Article
+          {t('articles.newArticle')}
         </Button>
       </Box>
 
@@ -89,7 +101,7 @@ export const Articles = () => {
         <Table>
           <TableHead>
             <TableRow>
-              {['Désignation', 'Prix Unitaire', 'Catégorie', 'TVA', 'Actions'].map(h => (
+              {[t('articles.table.designation'), t('common.unitPrice'), t('articles.table.category'), 'TVA', t('common.actions')].map(h => (
                 <TableCell key={h}
                   align={h === 'Prix Unitaire' || h === 'Actions' ? 'right' : 'left'}
                   sx={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.75rem',
@@ -103,7 +115,7 @@ export const Articles = () => {
             {articles.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} align="center" sx={{ py: 4, color: 'rgba(255,255,255,0.4)' }}>
-                  Aucun article — cliquez sur "Nouvel Article" pour commencer
+                  {t('articles.noArticles')}
                 </TableCell>
               </TableRow>
             ) : articles.map(article => (
@@ -141,17 +153,17 @@ export const Articles = () => {
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth
         PaperProps={{ className: 'bento-card', sx: { borderRadius: 3, background: 'rgba(8,8,7,0.97)' } }}>
         <DialogTitle sx={{ fontWeight: 700, fontSize: '1.4rem', color: '#fff' }}>
-          {editingArticle ? "Modifier l'Article" : 'Nouvel Article'}
+          {editingArticle ? t('articles.dialog.edit') : t('articles.dialog.add')}
         </DialogTitle>
         <DialogContent>
-          <TextField fullWidth label="Désignation" value={formData.designation}
+          <TextField fullWidth label={t('articles.dialog.fields.designation')} value={formData.designation}
             onChange={e => setFormData({ ...formData, designation: e.target.value })}
             margin="normal" required sx={inputSx} />
-          <TextField fullWidth label="Prix Unitaire (MAD)" type="number" value={formData.prix_unitaire}
+          <TextField fullWidth label={`${t('articles.dialog.fields.unitPrice')} (MAD)`} type="number" value={formData.prix_unitaire}
             onChange={e => setFormData({ ...formData, prix_unitaire: parseFloat(e.target.value) || 0 })}
             margin="normal" required sx={inputSx} />
           <FormControl fullWidth margin="normal" required>
-            <InputLabel>Catégorie</InputLabel>
+            <InputLabel>{t('articles.dialog.fields.category')}</InputLabel>
             <Select value={formData.categorie_id}
               onChange={e => setFormData({ ...formData, categorie_id: e.target.value })}
               sx={{ borderRadius: 2 }}>
@@ -166,11 +178,11 @@ export const Articles = () => {
         <DialogActions sx={{ p: 3, gap: 1 }}>
           <Button onClick={handleClose}
             sx={{ borderRadius: 2, px: 3, color: 'rgba(255,255,255,0.7)' }}>
-            Annuler
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleSubmit} variant="contained"
             sx={{ borderRadius: 2, px: 3, fontWeight: 700 }}>
-            {editingArticle ? 'Modifier' : 'Créer'}
+            {editingArticle ? t('articles.dialog.buttons.save') : t('articles.dialog.buttons.create')}
           </Button>
         </DialogActions>
       </Dialog>

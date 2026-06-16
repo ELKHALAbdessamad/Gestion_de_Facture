@@ -54,6 +54,17 @@ export const AnimatedInput = ({ icon, label, error, helperText, ...props }) => {
               background: 'rgba(255, 255, 255, 0.05)',
               transform: 'translateY(-2px)',
             },
+            // Neutraliser l'autofill bleu du navigateur
+            '& input:-webkit-autofill': {
+              WebkitBoxShadow: '0 0 0 100px rgba(30,30,30,0.95) inset',
+              WebkitTextFillColor: '#ffffff',
+              caretColor: '#ffffff',
+              borderRadius: 'inherit',
+            },
+            '& input:-webkit-autofill:focus': {
+              WebkitBoxShadow: '0 0 0 100px rgba(40,40,40,0.98) inset',
+              WebkitTextFillColor: '#ffffff',
+            },
           },
           '& .MuiInputLabel-root': {
             color: 'rgba(255, 255, 255, 0.5)',

@@ -6,8 +6,9 @@ import {
   TextField, IconButton, Chip
 } from '@mui/material';
 import { Add, Edit, Delete, Category } from '@mui/icons-material';
-import { getCategories, addCategory, updateCategory, deleteCategory } from '../services/jsonService';
+import { getCategories, addCategorie, updateCategorie, deleteCategorie, getArticles } from '../services/mongodbService';
 import { notify } from '../services/notificationService';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // TVA → couleur badge
 const tvaColor = (tva) => {
@@ -17,14 +18,31 @@ const tvaColor = (tva) => {
 };
 
 export const Categories = () => {
+  const { t } = useLanguage();
   const [categories, setCategories]   = useState([]);
+  const [articles, setArticles]       = useState([]);
   const [open, setOpen]               = useState(false);
   const [editingCategory, setEditing] = useState(null);
   const [formData, setFormData]       = useState({ nom: '', tva: 20 });
 
   useEffect(() => { load(); }, []);
 
-  const load = async () => setCategories(await getCategories());
+  const load = async () => {
+    const [cats, arts] = await Promise.all([getCategories(), getArticles()]);
+    setCategories(cats);
+    setArticles(arts);
+  };
+
+  const getArticleCount = (catId) => {
+    // Count articles that match this category
+    // Handle both string ID and populated object in article.categorie_id
+    return articles.filter(a => {
+      const artCatId = typeof a.categorie_id === 'object' 
+        ? (a.categorie_id?.id || a.categorie_id?._id?.toString())
+        : a.categorie_id;
+      return artCatId === catId || artCatId === catId.toString();
+    }).length;
+  };
 
   const handleOpen = (cat = null) => {
     if (cat) { setEditing(cat); setFormData({ nom: cat.nom, tva: cat.tva }); }
@@ -36,10 +54,10 @@ export const Categories = () => {
 
   const handleSubmit = async () => {
     if (editingCategory) {
-      await updateCategory(editingCategory.id, formData);
+      await updateCategorie(editingCategory.id, formData);
       notify.success(`Catégorie "${formData.nom}" modifiée`);
     } else {
-      await addCategory(formData);
+      await addCategorie(formData);
       notify.categorieCree(formData.nom);
     }
     handleClose();
@@ -48,7 +66,7 @@ export const Categories = () => {
 
   const handleDelete = async (cat) => {
     if (window.confirm(`Supprimer la catégorie "${cat.nom}" ?`)) {
-      await deleteCategory(cat.id);
+      await deleteCategorie(cat.id);
       notify.success(`Catégorie "${cat.nom}" supprimée`);
       load();
     }
@@ -64,7 +82,7 @@ export const Categories = () => {
           <Category sx={{ fontSize: 40, color: '#D4A853' }} />
           <Box>
             <Typography variant="h4" fontWeight={800} sx={{ color: '#fff' }}>
-              Gestion des Catégories
+              {t('categories.title')}
             </Typography>
             <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)' }}>
               TVA différenciée par catégorie — Informatique 20% · Services 10% · Formation 0%
@@ -73,7 +91,7 @@ export const Categories = () => {
         </Box>
         <Button variant="contained" startIcon={<Add />} onClick={() => handleOpen()}
           sx={{ borderRadius: 2, px: 3, py: 1.5, fontWeight: 700 }}>
-          Nouvelle Catégorie
+          {t('categories.newCategory')}
         </Button>
       </Box>
 
@@ -96,7 +114,7 @@ export const Categories = () => {
             {categories.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} align="center" sx={{ py: 4, color: 'rgba(255,255,255,0.4)' }}>
-                  Aucune catégorie
+                  {t('categories.noCategories')}
                 </TableCell>
               </TableRow>
             ) : categories.map(cat => {
@@ -109,7 +127,9 @@ export const Categories = () => {
                     <Chip label={`${cat.tva}%`} size="small"
                       sx={{ background: tc.bg, color: tc.color, border: `1px solid ${tc.border}`, fontWeight: 700 }} />
                   </TableCell>
-                  <TableCell sx={{ color: 'rgba(255,255,255,0.6)' }}>—</TableCell>
+                  <TableCell sx={{ color: 'rgba(255,255,255,0.6)' }}>
+                    {getArticleCount(cat.id)}
+                  </TableCell>
                   <TableCell align="right">
                     <IconButton size="small" onClick={() => handleOpen(cat)}
                       sx={{ color: '#60a5fa', '&:hover': { background: 'rgba(96,165,250,0.1)' } }}>
@@ -131,10 +151,10 @@ export const Categories = () => {
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth
         PaperProps={{ className: 'bento-card', sx: { borderRadius: 3, background: 'rgba(8,8,7,0.97)' } }}>
         <DialogTitle sx={{ fontWeight: 700, fontSize: '1.4rem', color: '#fff' }}>
-          {editingCategory ? 'Modifier la Catégorie' : 'Nouvelle Catégorie'}
+          {editingCategory ? t('categories.dialog.edit') : t('categories.dialog.add')}
         </DialogTitle>
         <DialogContent>
-          <TextField fullWidth label="Nom de la catégorie" value={formData.nom}
+          <TextField fullWidth label={t('categories.dialog.fields.name')} value={formData.nom}
             onChange={e => setFormData({ ...formData, nom: e.target.value })}
             margin="normal" required sx={inputSx} />
           <TextField fullWidth label="Taux TVA (%)" type="number" value={formData.tva}
@@ -145,11 +165,11 @@ export const Categories = () => {
         <DialogActions sx={{ p: 3, gap: 1 }}>
           <Button onClick={handleClose}
             sx={{ borderRadius: 2, px: 3, color: 'rgba(255,255,255,0.7)' }}>
-            Annuler
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleSubmit} variant="contained"
             sx={{ borderRadius: 2, px: 3, fontWeight: 700 }}>
-            {editingCategory ? 'Modifier' : 'Créer'}
+            {editingCategory ? t('categories.dialog.buttons.save') : t('categories.dialog.buttons.create')}
           </Button>
         </DialogActions>
       </Dialog>

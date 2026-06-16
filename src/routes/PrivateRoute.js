@@ -1,9 +1,9 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContextMongoDB';
 
 export const PrivateRoute = ({ children, adminOnly = false }) => {
-  const { currentUser, userRole, loading } = useAuth();
+  const { currentUser, isAdmin, loading } = useAuth();
 
   if (loading) {
     return null;
@@ -13,7 +13,7 @@ export const PrivateRoute = ({ children, adminOnly = false }) => {
     return <Navigate to="/login" />;
   }
 
-  if (adminOnly && userRole !== 'admin') {
+  if (adminOnly && !isAdmin) {
     return <Navigate to="/dashboard" />;
   }
 
