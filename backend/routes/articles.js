@@ -5,22 +5,18 @@ import { addIdField, addIdToArray } from '../utils/transformId.js';
 
 const router = express.Router();
 
-// GET tous les articles
+// GET tous les articles (catalogue partagé — tous les utilisateurs authentifiés)
 router.get('/', authenticate, async (req, res) => {
   try {
-    const articles = await Article.find({ user_id: req.userId })
+    const articles = await Article.find()
       .populate('categorie_id', 'nom tva');
     
-    // Transform _id to id for each article and populated categorie
     const transformed = articles.map(article => {
       const obj = article.toObject ? article.toObject() : article;
       obj.id = obj._id.toString();
-      
-      // If categorie_id is populated, also add id field to it
       if (obj.categorie_id && typeof obj.categorie_id === 'object' && obj.categorie_id._id) {
         obj.categorie_id.id = obj.categorie_id._id.toString();
       }
-      
       return obj;
     });
     

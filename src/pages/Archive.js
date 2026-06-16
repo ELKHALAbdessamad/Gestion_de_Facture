@@ -3,23 +3,27 @@ import { motion } from 'framer-motion';
 import {
   Box, Typography, Paper, Grid, Button, Chip,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  CircularProgress, Select, MenuItem, FormControl, InputLabel, Divider
+  CircularProgress, Select, MenuItem, FormControl, InputLabel, Divider, IconButton
 } from '@mui/material';
 import {
   Archive as ArchiveIcon, GetApp, TableChart, CalendarMonth, Receipt,
-  CheckCircle, Schedule, Cancel, ArrowBack
+  CheckCircle, Schedule, Cancel, ArrowBack, Delete, Visibility
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { getArchiveYears, getFacturesArchive, getClients } from '../services/mongodbService';
+import { getArchiveYears, getFacturesArchive, getClients, toggleArchiveFacture } from '../services/mongodbService';
 import { exportFacturesToExcel } from '../utils/excelExporter';
 import { formatMoney } from '../utils/currency';
 import { notify } from '../services/notificationService';
 import { AnimatedCard } from '../components/AnimatedCard';
+import { useAuth } from '../contexts/AuthContextMongoDB';
 
 export const Archive = () => {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [years, setYears] = useState([]);
   const [selectedYear, setSelectedYear] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState('all'); // Filtre mois
+  const [selectedWeek, setSelectedWeek] = useState('all'); // Nouveau filtre semaine
   const [archiveData, setArchiveData] = useState(null);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -79,9 +83,41 @@ export const Archive = () => {
   };
 
   const handleExportExcel = () => {
-    if (!archiveData?.factures?.length) return;
-    exportFacturesToExcel(archiveData.factures, clients, `Archive_${selectedYear}`);
+    if (!filteredFactures?.length) return;
+    
+    let fileName = `Archive_${selectedYear}`;
+    
+    if (selectedMonth !== 'all') {
+      const monthName = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'][parseInt(selectedMonth)];
+      fileName += `_${monthName}`;
+      
+      if (selectedWeek !== 'all') {
+        const weekData = weeksInMonth.find(w => w.value === parseInt(selectedWeek));
+        if (weekData) {
+          fileName += `_Semaine${selectedWeek}`;
+        }
+      }
+    }
+    
+    exportFacturesToExcel(filteredFactures, clients, fileName);
     notify.excelExporte();
+  };
+
+  const handleUnarchive = async (facture) => {
+    if (!isAdmin) {
+      notify.error('Seul un administrateur peut désarchiver des factures');
+      return;
+    }
+    if (window.confirm(`Désarchiver la facture ${facture.numero} ?\n\nElle sera remise dans les factures actives.`)) {
+      try {
+        await toggleArchiveFacture(facture.id);
+        notify.success(`Facture ${facture.numero} désarchivée avec succès`);
+        // Recharger les archives
+        loadArchive(selectedYear);
+      } catch (err) {
+        notify.error('Erreur lors du désarchivage');
+      }
+    }
   };
 
   const cardSx = {
@@ -89,6 +125,67 @@ export const Archive = () => {
     border: '1px solid rgba(255,255,255,0.08)',
     borderRadius: 3, p: 3,
   };
+
+  // Générer les semaines disponibles pour le mois sélectionné
+  const getWeeksInMonth = () => {
+    if (selectedMonth === 'all') return [];
+    
+    const month = parseInt(selectedMonth);
+    const year = parseInt(selectedYear);
+    
+    // Générer les semaines du mois même s'il n'y a pas de factures
+    const weeks = [];
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    
+    let weekStart = new Date(firstDay);
+    let weekNum = 1;
+    
+    while (weekStart <= lastDay) {
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      if (weekEnd > lastDay) weekEnd.setTime(lastDay.getTime());
+      
+      weeks.push({
+        value: weekNum,
+        label: `Semaine ${weekNum} (${weekStart.getDate()}-${weekEnd.getDate()})`,
+        start: new Date(weekStart),
+        end: new Date(weekEnd)
+      });
+      
+      weekStart.setDate(weekStart.getDate() + 7);
+      weekNum++;
+    }
+    
+    return weeks;
+  };
+
+  const weeksInMonth = getWeeksInMonth();
+
+  // Filtrer les factures par mois ET semaine
+  const filteredFactures = archiveData?.factures?.filter(f => {
+    if (!f.date_creation) return false;
+    
+    const factureDate = new Date(f.date_creation);
+    
+    // Filtre mois
+    if (selectedMonth !== 'all') {
+      const factureMonth = factureDate.getMonth();
+      if (factureMonth !== parseInt(selectedMonth)) return false;
+    }
+    
+    // Filtre semaine
+    if (selectedWeek !== 'all' && selectedMonth !== 'all') {
+      const selectedWeekData = weeksInMonth.find(w => w.value === parseInt(selectedWeek));
+      if (selectedWeekData) {
+        if (factureDate < selectedWeekData.start || factureDate > selectedWeekData.end) {
+          return false;
+        }
+      }
+    }
+    
+    return true;
+  }) || [];
 
   const StatCard = ({ icon: Icon, label, value, color, delay = 0 }) => (
     <AnimatedCard delay={delay}>
@@ -137,12 +234,16 @@ export const Archive = () => {
             </Box>
           </Box>
 
-          <Box display="flex" gap={2} alignItems="center">
+          <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
             <FormControl size="small" sx={{ minWidth: 160 }}>
               <InputLabel sx={{ color: 'rgba(255,255,255,0.5)' }}>Exercice</InputLabel>
               <Select
                 value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
+                onChange={(e) => {
+                  setSelectedYear(e.target.value);
+                  setSelectedMonth('all'); // Réinitialiser le mois
+                  setSelectedWeek('all'); // Réinitialiser la semaine
+                }}
                 label="Exercice"
                 sx={{
                   color: '#fff',
@@ -162,11 +263,72 @@ export const Archive = () => {
               </Select>
             </FormControl>
 
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <InputLabel sx={{ color: 'rgba(255,255,255,0.5)' }}>Mois</InputLabel>
+              <Select
+                value={selectedMonth}
+                onChange={(e) => {
+                  setSelectedMonth(e.target.value);
+                  setSelectedWeek('all'); // Réinitialiser la semaine quand on change de mois
+                }}
+                label="Mois"
+                sx={{
+                  color: '#fff',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 2,
+                  '& fieldset': { border: 'none' },
+                  '& .MuiSelect-icon': { color: '#D4A853' }
+                }}
+              >
+                <MenuItem value="all">Tous les mois</MenuItem>
+                <MenuItem value="0">Janvier</MenuItem>
+                <MenuItem value="1">Février</MenuItem>
+                <MenuItem value="2">Mars</MenuItem>
+                <MenuItem value="3">Avril</MenuItem>
+                <MenuItem value="4">Mai</MenuItem>
+                <MenuItem value="5">Juin</MenuItem>
+                <MenuItem value="6">Juillet</MenuItem>
+                <MenuItem value="7">Août</MenuItem>
+                <MenuItem value="8">Septembre</MenuItem>
+                <MenuItem value="9">Octobre</MenuItem>
+                <MenuItem value="10">Novembre</MenuItem>
+                <MenuItem value="11">Décembre</MenuItem>
+              </Select>
+            </FormControl>
+
+            {/* Filtre Semaine - visible dès qu'un mois est sélectionné */}
+            {selectedMonth !== 'all' && (
+              <FormControl size="small" sx={{ minWidth: 160 }}>
+                <InputLabel sx={{ color: 'rgba(255,255,255,0.5)' }}>Semaine</InputLabel>
+                <Select
+                  value={selectedWeek}
+                  onChange={(e) => setSelectedWeek(e.target.value)}
+                  label="Semaine"
+                  sx={{
+                    color: '#fff',
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: 2,
+                    '& fieldset': { border: 'none' },
+                    '& .MuiSelect-icon': { color: '#D4A853' }
+                  }}
+                >
+                  <MenuItem value="all">Toutes les semaines</MenuItem>
+                  {weeksInMonth.map(week => (
+                    <MenuItem key={week.value} value={week.value}>
+                      {week.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+
             <Button
               variant="outlined"
               startIcon={<TableChart />}
               onClick={handleExportExcel}
-              disabled={!archiveData?.factures?.length}
+              disabled={!filteredFactures?.length}
               sx={{
                 borderColor: '#4ade80', color: '#4ade80',
                 '&:hover': { background: 'rgba(74,222,128,0.1)' },
@@ -272,15 +434,19 @@ export const Archive = () => {
           <AnimatedCard delay={500}>
             <Paper sx={{ ...cardSx }}>
               <Typography variant="h6" fontWeight={700} sx={{ color: '#D4A853', mb: 2 }}>
-                📋 Factures — Exercice {selectedYear} ({archiveData.factures.length})
+                📋 Factures — Exercice {selectedYear} 
+                {selectedMonth !== 'all' && ` — ${['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'][parseInt(selectedMonth)]}`}
+                {selectedWeek !== 'all' && selectedMonth !== 'all' && ` — Semaine ${selectedWeek}`}
+                ({filteredFactures.length})
               </Typography>
               <TableContainer>
                 <Table size="small">
                   <TableHead>
                     <TableRow>
-                      {['Numéro', 'Date', 'Client', 'Total HT', 'TVA', 'Total TTC', 'Statut'].map(h => (
+                      {['Numéro', 'Date', 'Client', 'Total HT', 'TVA', 'Total TTC', 'Statut', 'Actions'].map(h => (
                         <TableCell
                           key={h}
+                          align={h === 'Actions' ? 'right' : 'left'}
                           sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: 0.8, borderColor: 'rgba(255,255,255,0.08)' }}
                         >
                           {h}
@@ -289,18 +455,17 @@ export const Archive = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {archiveData.factures.length === 0 ? (
+                    {filteredFactures.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} align="center" sx={{ py: 4, color: 'rgba(255,255,255,0.4)' }}>
-                          Aucune facture pour l'exercice {selectedYear}
+                        <TableCell colSpan={8} align="center" sx={{ py: 4, color: 'rgba(255,255,255,0.4)' }}>
+                          Aucune facture pour {selectedMonth !== 'all' ? 'ce mois' : `l'exercice ${selectedYear}`}
                         </TableCell>
                       </TableRow>
                     ) : (
-                      archiveData.factures.map((f, i) => (
+                      filteredFactures.map((f, i) => (
                         <TableRow
                           key={f.id || i}
-                          sx={{ '&:hover': { background: 'rgba(212,168,83,0.05)' }, cursor: 'pointer' }}
-                          onClick={() => navigate(`/factures/${f.id}`)}
+                          sx={{ '&:hover': { background: 'rgba(212,168,83,0.05)' } }}
                         >
                           <TableCell sx={{ color: '#D4A853', fontWeight: 600, borderColor: 'rgba(255,255,255,0.05)' }}>
                             {f.numero}
@@ -322,6 +487,25 @@ export const Archive = () => {
                           </TableCell>
                           <TableCell sx={{ borderColor: 'rgba(255,255,255,0.05)' }}>
                             <Chip label={f.statut} color={statusColor(f.statut)} size="small" sx={{ fontWeight: 600 }} />
+                          </TableCell>
+                          <TableCell align="right" sx={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+                            <IconButton
+                              size="small"
+                              onClick={() => navigate(`/factures/${f.id}`)}
+                              sx={{ color: '#D4A853', '&:hover': { background: 'rgba(212,168,83,0.1)' } }}
+                            >
+                              <Visibility fontSize="small" />
+                            </IconButton>
+                            {isAdmin && (
+                              <IconButton
+                                size="small"
+                                onClick={() => handleUnarchive(f)}
+                                sx={{ color: '#4ade80', '&:hover': { background: 'rgba(74,222,128,0.1)' } }}
+                                title="Désarchiver"
+                              >
+                                <ArchiveIcon fontSize="small" />
+                              </IconButton>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))

@@ -5,10 +5,10 @@ import { transformMongoId } from '../middleware/transformId.js';
 
 const router = express.Router();
 
-// GET toutes les catégories
+// GET toutes les catégories (catalogue partagé — tous les utilisateurs authentifiés)
 router.get('/', authenticate, async (req, res) => {
   try {
-    const categories = await Categorie.find({ user_id: req.userId }).sort({ nom: 1 });
+    const categories = await Categorie.find().sort({ nom: 1 });
     const transformed = categories.map(cat => {
       const obj = cat.toObject();
       obj.id = obj._id.toString();

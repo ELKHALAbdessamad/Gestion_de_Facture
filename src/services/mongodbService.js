@@ -240,6 +240,11 @@ export const getFacturesArchive = async (year) => {
 };
 
 export const sendFactureEmail = async (id) => {
-  const { data } = await api.post(`/factures/${id}/send-email`);
+  const { data} = await api.post(`/factures/${id}/send-email`);
+  return data;
+};
+
+export const toggleArchiveFacture = async (id) => {
+  const { data } = await api.post(`/factures/${id}/toggle-archive`);
   return data;
 };

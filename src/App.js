@@ -14,7 +14,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Factures } from './pages/Factures';
 import { FactureForm } from './pages/FactureForm';
 import { FactureDetail } from './pages/FactureDetail';
-import { FacturePublic } from './pages/FacturePublic';
+import { DownloadInvoice } from './pages/DownloadInvoice';
 import { Clients } from './pages/Clients';
 import { Articles } from './pages/Articles';
 import { Categories } from './pages/Categories';
@@ -112,8 +112,8 @@ function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            {/* Route publique pour scan QR code */}
-            <Route path="/facture/:id" element={<FacturePublic />} />
+            {/* Route publique pour téléchargement via QR code */}
+            <Route path="/download-invoice/:id" element={<DownloadInvoice />} />
             <Route
               path="/dashboard"
               element={

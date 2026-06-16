@@ -67,7 +67,12 @@ const factureSchema = new mongoose.Schema({
   projet_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Projet' },
   
   // Devise utilisée
-  devise: { type: String, default: 'MAD' }
+  devise: { type: String, default: 'MAD' },
+  
+  // Archivage
+  archived: { type: Boolean, default: false },
+  archived_at: Date,
+  archived_by: String
 }, {
   timestamps: true
 });

@@ -1,0 +1,118 @@
+@startuml Séquence de Validation de Facture
+skinparam backgroundColor #1a1a1a
+skinparam sequenceMessageAlign center
+skinparam defaultFontColor #ffffff
+skinparam actorBackgroundColor #2d2d2d
+skinparam actorBorderColor #D4A853
+skinparam participantBackgroundColor #2d2d2d
+skinparam participantBorderColor #D4A853
+skinparam sequenceArrowColor #D4A853
+skinparam sequenceLifeLineBorderColor #D4A853
+skinparam noteBackgroundColor #3d3d3d
+skinparam noteBorderColor #D4A853
+
+title Séquence de Validation d'une Facture
+
+actor "Utilisateur\n(Comptable)" as User #lightblue
+participant "Interface Web\n(React)" as UI #skyblue
+participant "API Backend\n(Express)" as API #orange
+database "MongoDB" as DB #green
+actor "Administrateur" as Admin #gold
+actor "Client" as Client #lightgreen
+participant "Service Email\n(EmailJS)" as Email #pink
+
+== Création de Facture ==
+
+User -> UI: Créer nouvelle facture
+UI -> User: Formulaire de facture
+User -> UI: Remplir détails\n(client, articles, montants)
+User -> UI: Cliquer "Envoyer Facture"
+
+UI -> API: POST /api/factures\n{statut: "En attente"}
+API -> API: Vérifier authentification\n(JWT token)
+API -> DB: Créer facture\nuser_id = userId\nstatut = "En attente"
+DB --> API: Facture créée (id: xxx)
+API --> UI: 201 Created {id, numero}
+UI --> User: ✅ Facture INV-0616\nenvoyée pour validation
+
+note over User, DB
+  **État actuel:**
+  Statut = "En attente"
+  validated_by_admin = false
+end note
+
+== Validation par Admin ==
+
+Admin -> UI: Consulter factures\nen attente
+UI -> API: GET /api/factures
+API -> DB: SELECT * FROM factures\nWHERE statut = "En attente"
+DB --> API: Liste factures
+API --> UI: Factures en attente
+UI --> Admin: Afficher liste\n(1 facture: INV-0616)
+
+Admin -> UI: Cliquer sur INV-0616
+UI -> API: GET /api/factures/:id
+API -> DB: SELECT facture + client
+DB --> API: Détails complets
+API --> UI: Facture + Client
+UI --> Admin: **Boutons Admin:**\n[Valider] [Rejeter]
+
+alt Facture valide
+    Admin -> UI: Cliquer "Valider"
+    UI -> API: PUT /api/factures/:id\n{\n  statut: "Payée",\n  validated_by_admin: true,\n  validated_by: "admin@test.com",\n  validated_at: "2026-06-16T10:30:00Z"\n}
+    
+    API -> API: Vérifier role === "admin"
+    
+    alt Role = admin ✅
+        API -> DB: UPDATE facture\nSET statut = "Payée",\nvalidated_by_admin = true
+        DB --> API: ✅ Updated
+        API --> UI: 200 OK {facture validée}
+        UI --> Admin: ✅ Facture validée
+        
+        UI -> Email: sendFactureByEmail(\nfacture, client, parametres\n)
+        Email -> Client: 📧 Email avec PDF\n"Votre facture INV-0616"
+        Client --> Email: ✅ Email reçu
+        Email --> UI: Email envoyé
+        UI --> Admin: 📧 Email envoyé au client
+        
+        note over Admin, Client #lightgreen
+          **Facture finalisée:**
+          - Statut = "Payée"
+          - validated_by_admin = true
+          - validated_by = "admin@test.com"
+          - validated_at = timestamp
+          - Email envoyé au client
+        end note
+        
+    else Role = user ❌
+        API --> UI: ❌ 403 Forbidden\n"Seul un administrateur\npeut valider"
+        UI --> Admin: ❌ Accès refusé
+    end
+    
+else Facture rejetée
+    Admin -> UI: Cliquer "Rejeter"
+    UI -> API: PUT /api/factures/:id\n{statut: "Rejetée"}
+    
+    API -> API: Vérifier role === "admin"
+    API -> DB: UPDATE statut = "Rejetée"
+    DB --> API: ✅ Updated
+    API --> UI: 200 OK
+    UI --> Admin: ❌ Facture rejetée
+    
+    note over Admin, DB #lightcoral
+      **Facture rejetée:**
+      L'utilisateur devra créer
+      une nouvelle facture corrigée
+    end note
+end
+
+== Consultation par User ==
+
+User -> UI: Voir mes factures
+UI -> API: GET /api/factures
+API -> DB: SELECT WHERE user_id = xxx
+DB --> API: Factures de l'utilisateur
+API --> UI: Liste factures
+UI --> User: INV-0616: Payée ✅
+
+@enduml

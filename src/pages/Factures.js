@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import { Add, Visibility, GetApp, Edit, Delete, TableChart, Search, Archive } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { getFactures, deleteFacture, getClients } from '../services/mongodbService';
+import { getFactures, deleteFacture, getClients, toggleArchiveFacture } from '../services/mongodbService';
 import { getArticles, getParametres } from '../services/mongodbService';
 import { downloadFacturePDF } from '../utils/pdfGenerator';
 import { exportFacturesToExcel } from '../utils/excelExporter';
@@ -49,6 +49,14 @@ export const Factures = () => {
     return client ? client.nom : 'Client inconnu';
   };
 
+  const getUserName = (userId) => {
+    if (!userId) return '—';
+    if (typeof userId === 'object' && userId?.email) {
+      return userId.email;
+    }
+    return '—';
+  };
+
   const statusColor = (s) => {
     if (s === 'Payée')      return 'success';
     if (s === 'En attente') return 'warning';
@@ -73,6 +81,23 @@ export const Factures = () => {
       await deleteFacture(facture.id);
       notify.factureSupprimee(facture.numero);
       loadData();
+    }
+  };
+
+  const handleArchive = async (facture, e) => {
+    e.stopPropagation(); // Empêcher la navigation
+    if (!isAdmin) {
+      notify.error('Seul un administrateur peut archiver des factures');
+      return;
+    }
+    if (window.confirm(`Archiver la facture ${facture.numero} ?\n\nElle sera déplacée dans les archives.`)) {
+      try {
+        await toggleArchiveFacture(facture.id);
+        notify.success(`Facture ${facture.numero} archivée avec succès`);
+        loadData();
+      } catch (err) {
+        notify.error('Erreur lors de l\'archivage');
+      }
     }
   };
 
@@ -149,19 +174,6 @@ export const Factures = () => {
             }}
           >
             Export Excel
-          </Button>
-
-          {/* Archivage annuel */}
-          <Button
-            variant="outlined"
-            startIcon={<Archive />}
-            onClick={() => setArchiveOpen(true)}
-            sx={{
-              borderColor: '#a78bfa', color: '#a78bfa', fontWeight: 600,
-              '&:hover': { background: 'rgba(167,139,250,0.1)' }
-            }}
-          >
-            Archiver
           </Button>
 
           <Button
@@ -252,7 +264,16 @@ export const Factures = () => {
         <Table>
           <TableHead>
             <TableRow>
-              {[t('invoices.table.number'), t('invoices.table.date'), t('invoices.table.client'), t('invoices.table.totalTTC'), t('invoices.table.status'), 'Validé', t('invoices.table.actions')].map(h => (
+              {[
+                t('invoices.table.number'), 
+                t('invoices.table.date'), 
+                t('invoices.table.client'), 
+                ...(isAdmin ? ['Créé par'] : []),
+                t('invoices.table.totalTTC'), 
+                t('invoices.table.status'), 
+                'Validé', 
+                t('invoices.table.actions')
+              ].map(h => (
                 <TableCell
                   key={h}
                   align={h === 'Total TTC' || h === 'Actions' ? 'right' : 'left'}
@@ -266,7 +287,7 @@ export const Factures = () => {
           <TableBody>
             {filteredFactures.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 4, color: 'rgba(255,255,255,0.4)' }}>
+                <TableCell colSpan={isAdmin ? 8 : 7} align="center" sx={{ py: 4, color: 'rgba(255,255,255,0.4)' }}>
                   {t('invoices.noInvoices')}
                 </TableCell>
               </TableRow>
@@ -285,6 +306,11 @@ export const Factures = () => {
                   <TableCell sx={{ color: '#fff', fontWeight: 600 }}>
                     {getClientName(facture.client_id)}
                   </TableCell>
+                  {isAdmin && (
+                    <TableCell sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>
+                      {getUserName(facture.user_id)}
+                    </TableCell>
+                  )}
                   <TableCell align="right" sx={{ fontWeight: 700, color: '#fff' }}>
                     {formatMoney(facture.total_ttc, devise)}
                   </TableCell>
@@ -320,13 +346,23 @@ export const Factures = () => {
                       <GetApp fontSize="small" />
                     </IconButton>
                     {isAdmin && (
-                      <IconButton
-                        size="small"
-                        onClick={() => handleDelete(facture)}
-                        sx={{ color: '#ef4444', '&:hover': { background: 'rgba(239,68,68,0.1)' } }}
-                      >
-                        <Delete fontSize="small" />
-                      </IconButton>
+                      <>
+                        <IconButton
+                          size="small"
+                          onClick={(e) => handleArchive(facture, e)}
+                          sx={{ color: '#a78bfa', '&:hover': { background: 'rgba(167,139,250,0.1)' } }}
+                          title="Archiver"
+                        >
+                          <Archive fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleDelete(facture)}
+                          sx={{ color: '#ef4444', '&:hover': { background: 'rgba(239,68,68,0.1)' } }}
+                        >
+                          <Delete fontSize="small" />
+                        </IconButton>
+                      </>
                     )}
                   </TableCell>
                 </TableRow>

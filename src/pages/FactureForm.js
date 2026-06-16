@@ -92,8 +92,10 @@ export const FactureForm = () => {
           }
         }
       } else {
+        // Générer un numéro unique avec timestamp pour éviter les doublons
         const date = new Date();
-        const numero = `INV-${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
+        const timestamp = String(Date.now()).slice(-4); // 4 derniers chiffres du timestamp
+        const numero = `INV-${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}-${timestamp}`;
         setFormData(prev => ({ ...prev, numero }));
       }
     };
@@ -181,6 +183,13 @@ export const FactureForm = () => {
   };
 
   const handleSubmit = async (status = 'Draft') => {
+    // Validation : client obligatoire
+    if (!formData.client_id) {
+      notify.error('Veuillez sélectionner un client avant de continuer');
+      return;
+    }
+
+    try {
     const articlesData = lineItems.map(item => ({
       designation: item.description || '',
       quantite: parseFloat(item.quantity) || 0,
@@ -235,6 +244,11 @@ export const FactureForm = () => {
     }
 
     navigate('/factures');
+  } catch (err) {
+    const msg = err.response?.data?.error || err.message || 'Erreur inconnue';
+    console.error('Erreur handleSubmit:', msg, err.response?.data);
+    notify.error(`Erreur : ${msg}`);
+  }
   };
 
   const selectedClient = clients.find(c => c.id === formData.client_id);

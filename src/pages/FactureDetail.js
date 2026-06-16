@@ -68,7 +68,6 @@ export const FactureDetail = () => {
     }
     setPdfLoading(true);
     try {
-      // Ajouter l'ID à la facture pour le QR code
       const factureWithId = { ...facture, id };
       await downloadFacturePDF(factureWithId, client, articles, parametres, signatureDataUrl, language);
       notify.pdfGenere(facture.numero);
@@ -81,7 +80,9 @@ export const FactureDetail = () => {
 
   const handleValidate = async () => {
     if (!isAdmin) return;
+    // Valider = passer en statut "Payée" + marquer comme validé par admin
     await updateFacture(id, {
+      statut: 'Payée',
       validated_by_admin: true,
       validated_by: currentUser?.email || 'admin',
       validated_at: new Date().toISOString(),
@@ -185,8 +186,8 @@ export const FactureDetail = () => {
             </Button>
           </Tooltip>
 
-          {/* Valider (admin) */}
-          {isAdmin && !facture.validated_by_admin && (
+          {/* Valider (admin seulement - passe en "Payée") */}
+          {isAdmin && facture.statut === 'En attente' && (
             <Button
               variant="contained"
               startIcon={<CheckCircle />}
@@ -197,26 +198,15 @@ export const FactureDetail = () => {
             </Button>
           )}
 
-          {/* Changer statut */}
-          {facture.statut === 'En attente' && (
-            <>
-              <Button
-                variant="outlined"
-                onClick={() => handleStatusChange('Payée')}
-                sx={{ borderColor: '#4ade80', color: '#4ade80' }}
-              >
-                {t('invoiceDetail.buttons.markPaid')}
-              </Button>
-              {isAdmin && (
-                <Button
-                  variant="outlined"
-                  onClick={() => handleStatusChange('Rejetée')}
-                  sx={{ borderColor: '#ef4444', color: '#ef4444' }}
-                >
-                  {t('invoiceDetail.buttons.reject')}
-                </Button>
-              )}
-            </>
+          {/* Rejeter (admin seulement) */}
+          {isAdmin && facture.statut === 'En attente' && (
+            <Button
+              variant="outlined"
+              onClick={() => handleStatusChange('Rejetée')}
+              sx={{ borderColor: '#ef4444', color: '#ef4444' }}
+            >
+              {t('invoiceDetail.buttons.reject')}
+            </Button>
           )}
 
           {/* Modifier */}
@@ -479,45 +469,6 @@ export const FactureDetail = () => {
             </Paper>
           </Grid>
         )}
-
-        {/* ── Lien public QR Code ── */}
-        <Grid item xs={12}>
-          <Paper sx={cardSx}>
-            <Typography variant="h6" fontWeight={700} sx={{ color: '#D4A853', mb: 2 }}>
-              Accès public via QR Code
-            </Typography>
-            <Typography sx={{ color: 'rgba(255,255,255,0.7)', mb: 2, fontSize: '0.9rem' }}>
-              Scannez le QR code sur le PDF pour accéder à cette facture depuis un téléphone et la télécharger.
-            </Typography>
-            <Box
-              sx={{
-                background: 'rgba(212,168,83,0.1)',
-                border: '1px solid rgba(212,168,83,0.3)',
-                borderRadius: 2,
-                p: 2,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 2,
-                flexWrap: 'wrap'
-              }}
-            >
-              <Typography sx={{ color: '#D4A853', fontFamily: 'monospace', fontSize: '0.85rem', flex: 1 }}>
-                {window.location.origin}/facture/{id}
-              </Typography>
-              <Button
-                size="small"
-                onClick={() => {
-                  navigator.clipboard.writeText(`${window.location.origin}/facture/${id}`);
-                  notify.success('Lien copié !');
-                }}
-                sx={{ color: '#D4A853', borderColor: '#D4A853' }}
-                variant="outlined"
-              >
-                Copier le lien
-              </Button>
-            </Box>
-          </Paper>
-        </Grid>
       </Grid>
 
       {/* ── Modal Signature ── */}

@@ -33,7 +33,12 @@ const parametresSchema = new mongoose.Schema({
     default: 0
   },
   entreprises: [entrepriseSchema],
-  entreprise: { type: entrepriseSchema, default: undefined }
+  entreprise: { type: entrepriseSchema, default: undefined },
+  // URL publique pour les QR codes (ex: https://novafact.com ou https://abc123.ngrok.io)
+  url_publique: {
+    type: String,
+    default: 'http://localhost:3000'
+  }
 }, {
   timestamps: true
 });

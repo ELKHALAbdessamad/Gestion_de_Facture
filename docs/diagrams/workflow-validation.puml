@@ -1,0 +1,83 @@
+@startuml Workflow de Validation des Factures
+skinparam backgroundColor #1a1a1a
+skinparam defaultFontColor #ffffff
+skinparam activityBackgroundColor #2d2d2d
+skinparam activityBorderColor #D4A853
+skinparam activityFontColor #ffffff
+skinparam noteBackgroundColor #3d3d3d
+skinparam noteBorderColor #D4A853
+skinparam arrowColor #D4A853
+
+title Workflow de Validation des Factures NovaFact
+
+|#lightblue|Utilisateur (Comptable/Agent)|
+start
+:Créer une facture;
+note right
+  Statut initial: "Draft"
+  Accessible uniquement par le créateur
+end note
+
+:Remplir les détails\n(Client, Articles, Montants);
+
+if (Prête à soumettre ?) then (oui)
+  :Cliquer "Envoyer Facture";
+  :Statut = "En attente";
+  note right
+    La facture est maintenant visible
+    par l'administrateur pour validation
+  end note
+else (non)
+  :Sauvegarder en brouillon;
+  stop
+endif
+
+|#gold|Administrateur|
+:Recevoir notification\nde nouvelle facture;
+
+:Ouvrir la facture\nen "En attente";
+
+:Vérifier les détails\n(Client, Montants, Articles);
+
+if (Facture correcte ?) then (✅ OUI)
+  :Cliquer "Valider";
+  :Statut = "Payée";
+  :Marquer validated_by_admin = true;
+  :Enregistrer email admin\net timestamp;
+  
+  :Envoyer email automatique\nau client avec PDF;
+  
+  note right
+    **Champs mis à jour:**
+    - statut: "Payée"
+    - validated_by_admin: true
+    - validated_by: "admin@test.com"
+    - validated_at: timestamp
+  end note
+  
+  |#lightblue|Utilisateur|
+  :Recevoir notification\nde validation;
+  
+  |#lightgreen|Client|
+  :Recevoir email\navec facture PDF;
+  
+  stop
+  
+else (❌ NON)
+  :Cliquer "Rejeter";
+  :Statut = "Rejetée";
+  
+  note right
+    La facture est rejetée.
+    L'utilisateur peut la consulter
+    mais ne peut plus la modifier
+  end note
+  
+  |#lightblue|Utilisateur|
+  :Recevoir notification\nde rejet;
+  :Créer une nouvelle facture\ncorrigée;
+  
+  stop
+endif
+
+@enduml

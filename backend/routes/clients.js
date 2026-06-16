@@ -5,10 +5,10 @@ import { addIdField, addIdToArray } from '../utils/transformId.js';
 
 const router = express.Router();
 
-// GET tous les clients
+// GET tous les clients (partagés entre tous les utilisateurs authentifiés)
 router.get('/', authenticate, async (req, res) => {
   try {
-    const clients = await Client.find({ user_id: req.userId }).sort({ nom: 1 });
+    const clients = await Client.find().sort({ nom: 1 });
     res.json(addIdToArray(clients));
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -50,7 +50,7 @@ const getPDFTranslations = (language = 'fr') => {
       : "Payment due on receipt · Late payment penalty: 3× legal rate · Fixed compensation: 40 MAD",
     
     // QR & Footer
-    scanToVerify: language === 'fr' ? 'Scan pour vérifier' : 'Scan to verify',
+    scanToDownload: language === 'fr' ? 'Scanner pour télécharger' : 'Scan to download',
     thankYou: language === 'fr' ? 'Merci de votre confiance' : 'Thank you for your business',
     
     // Statuts
@@ -60,17 +60,14 @@ const getPDFTranslations = (language = 'fr') => {
   };
 };
 
-// ─── Génère le QR code de la facture ─────────────────────────────────────────
-const generateQRDataUrl = async (facture, client, devise = 'MAD', entreprise = {}) => {
-  // URL publique pour accéder à la facture via QR code
-  // Utilise l'IP locale pour permettre l'accès depuis mobile sur le même réseau
-  const baseUrl = process.env.NODE_ENV === 'production' 
-    ? (window.location.origin || 'http://localhost:3000')
-    : 'http://192.168.1.11:3000';  // IP locale pour développement
-  
-  const factureUrl = `${baseUrl}/facture/${facture.id}`;
+// ─── Génère le QR code pour téléchargement mobile ─────────────────────────────
+const generateQRDataUrl = async (facture, parametres) => {
+  // Utiliser REACT_APP_PUBLIC_URL (Railway) pour les QR codes publics
+  // L'app locale utilise localhost, mais les QR codes pointent vers Railway
+  const baseUrl = process.env.REACT_APP_PUBLIC_URL || parametres?.url_publique || window.location.origin || 'http://localhost:3000';
+  const downloadUrl = `${baseUrl}/download-invoice/${facture.id}`;
 
-  return QRCode.toDataURL(factureUrl, {
+  return QRCode.toDataURL(downloadUrl, {
     width: 100,
     margin: 1,
     errorCorrectionLevel: 'M',
@@ -327,10 +324,10 @@ export const generateFacturePDF = async (
   const splitConditions = doc.splitTextToSize(tr.termsText, 85);
   doc.text(splitConditions, 110, y + 4);
 
-  // ── QR Code (intégré dans colonne droite) ─────────────────────────────────
+  // ── QR Code pour téléchargement mobile ────────────────────────────────────
   let qrDataUrl = null;
   try {
-    qrDataUrl = await generateQRDataUrl(facture, client, devise, entreprise);
+    qrDataUrl = await generateQRDataUrl(facture, parametres);
   } catch (err) {
     console.error('Erreur génération QR:', err);
   }
@@ -343,7 +340,7 @@ export const generateFacturePDF = async (
     doc.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
     doc.setFontSize(5.5);
     doc.setTextColor(120, 120, 120);
-    doc.text(tr.scanToVerify, qrX + 1, qrY + qrSize + 3);
+    doc.text(tr.scanToDownload, qrX + 1, qrY + qrSize + 3);
   }
 
   // ── Pied de page (plus compact) ──────────────────────────────────────────
