@@ -1,0 +1,37 @@
+﻿{
+  "_id": "6a31d4d431822964cf5ea390",
+  "numero": "INV-0617-7105",
+  "date_creation": "2026-06-16T00:00:00.000Z",
+  "date_echeance": "2026-07-16T00:00:00.000Z",
+  "client_id": "6a30618a17028a1ffbc6d268",
+  "user_id": "6a304588a2762beec06e06de",
+  "articles": [
+    {
+      "designation": "cv",
+      "quantite": 1,
+      "prix_unitaire": 1000,
+      "remise": 20,
+      "tva": 20,
+      "categorie_id": "6a30615517028a1ffbc6d249"
+    }
+  ],
+  "statut": "En attente",
+  "total_ht": 800,
+  "remise_globale": 10,
+  "remise_montant": 80,
+  "total_apres_remise": 720,
+  "tva": 144,
+  "total_ttc": 864,
+  "mode_paiement": "Ch├¿que",
+  "date_depot": "2026-07-01T00:00:00.000Z",
+  "date_encaissement": "2026-06-23T00:00:00.000Z",
+  "type_virement": "International",
+  "validated_by_admin": false,
+  "notes": "",
+  "methode_facturation": 1,
+  "devise": "MAD",
+  "archived": false,
+  "createdAt": "2026-06-16T22:57:24.262Z",
+  "updatedAt": "2026-06-16T22:57:24.262Z",
+  "__v": 0
+}
