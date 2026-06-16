@@ -283,10 +283,28 @@
             doc.setTextColor(8, 8, 7);
             doc.text(`Total TTC: ${factureData.facture.total_ttc.toFixed(2)} ${factureData.facture.devise || 'MAD'}`, 105, y, { align: 'center' });
             
+            // Signature numérique (si elle existe)
+            if (factureData.facture.signature) {
+                y += 25;
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'bold');
+                doc.text('Signature numérique:', 20, y);
+                
+                // Ajouter l'image de la signature
+                try {
+                    doc.addImage(factureData.facture.signature, 'PNG', 20, y + 5, 60, 30);
+                } catch (e) {
+                    console.error('Erreur ajout signature:', e);
+                    doc.setFont(undefined, 'normal');
+                    doc.text('(Signature disponible)', 20, y + 10);
+                }
+            }
+            
             // Footer
             doc.setFontSize(8);
             doc.setTextColor(128, 128, 128);
-            doc.text('Généré par NovaFact', 105, 280, { align: 'center' });
+            doc.text('Généré par NovaFact - Document téléchargé via QR Code', 105, 285, { align: 'center' });
             
             // Télécharger
             doc.save(`${factureData.facture.numero}.pdf`);
