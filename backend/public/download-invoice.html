@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Téléchargement Facture - NovaFact</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -187,6 +188,9 @@
     <script>
         let factureData = null;
         
+        // Logo NovaFact en base64 (copié depuis logoLoader.js)
+        const logoBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAACXBIWXMAAAsTAAALEwEAmpwYAAABNmlDQ1BpY2MAABiVY2BgMnB0cXJlEmBgyM0rKQpyd1KIiIxSYD/PwMbAzAAGicnFBY4BAT4gdl5+XioDBvh+qXgYMoUQW4CMPgYg+zUD/////8K1AwODvP///3////8PUPkZmMwBcgVBegC8r7AwMEhRREhXQjbyCFSDKHPnmLBgYGRgYOBKKUlNYWBgYE9HyGZnVxYW5mbmZlEQMzAzAAAAALMLB0NDQ0MAAACRSUQBSTY1NwAAAABbAAAAAAAAFSwBAAAAAAAAAQAAAAB';
+        
         // Extraire l'ID depuis l'URL
         const pathParts = window.location.pathname.split('/');
         const invoiceId = pathParts[pathParts.length - 1];
@@ -219,95 +223,254 @@
             }
         }
         
-        // Télécharger le PDF (version simplifiée)
+        // Générer le PDF (EXACTEMENT comme pdfGenerator.js SANS QR CODE)
         function downloadPDF() {
             if (!factureData) return;
             
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
-            // En-tête avec fond doré
-            doc.setFillColor(212, 168, 83);
-            doc.rect(0, 0, 210, 40, 'F');
+            const facture = factureData.facture;
+            const client = factureData.client;
+            const parametres = factureData.parametres || {};
+            
+            // Couleurs
+            const gold = [212, 168, 83];
+            const dark = [8, 8, 7];
+            const gray = [200, 200, 200];
+            
+            const devise = facture.devise || 'MAD';
+            const fmt = (n) => `${(n || 0).toFixed(2)} ${devise}`;
+            
+            // Bordure dorée supérieure
+            doc.setDrawColor(...gold);
+            doc.setLineWidth(3);
+            doc.line(10, 10, 200, 10);
             
             // Logo NovaFact
-            doc.setFontSize(24);
-            doc.setTextColor(8, 8, 7);
-            doc.setFont(undefined, 'bold');
-            doc.text('NovaFact', 105, 20, { align: 'center' });
-            
-            // Numéro de facture
-            doc.setFontSize(16);
-            doc.text(factureData.facture.numero, 105, 32, { align: 'center' });
-            
-            // Informations client
-            doc.setTextColor(0, 0, 0);
-            doc.setFontSize(12);
-            doc.setFont(undefined, 'bold');
-            doc.text('Client:', 20, 55);
-            
-            doc.setFont(undefined, 'normal');
-            doc.text(factureData.client?.nom || 'N/A', 20, 65);
-            
-            if (factureData.client?.email) {
-                doc.text(factureData.client.email, 20, 72);
-            }
-            
-            // Date
-            doc.setFont(undefined, 'bold');
-            doc.text('Date:', 20, 87);
-            doc.setFont(undefined, 'normal');
-            doc.text(new Date(factureData.facture.date_creation).toLocaleDateString('fr-FR'), 45, 87);
-            
-            // Articles
-            let y = 105;
-            doc.setFont(undefined, 'bold');
-            doc.text('Articles:', 20, y);
-            y += 8;
-            
-            doc.setFont(undefined, 'normal');
-            doc.setFontSize(10);
-            (factureData.facture.articles || []).forEach((article, index) => {
-                const line = `${article.designation} - Qté: ${article.quantite} × ${article.prix_unitaire} ${factureData.facture.devise || 'MAD'}`;
-                doc.text(line, 20, y);
-                y += 7;
-            });
-            
-            // Total avec fond doré
-            y += 15;
-            doc.setFillColor(212, 168, 83);
-            doc.rect(15, y - 8, 180, 15, 'F');
-            
-            doc.setFontSize(14);
-            doc.setFont(undefined, 'bold');
-            doc.setTextColor(8, 8, 7);
-            doc.text(`Total TTC: ${factureData.facture.total_ttc.toFixed(2)} ${factureData.facture.devise || 'MAD'}`, 105, y, { align: 'center' });
-            
-            // Signature numérique (si elle existe)
-            if (factureData.facture.signature) {
-                y += 25;
-                doc.setTextColor(0, 0, 0);
-                doc.setFontSize(10);
-                doc.setFont(undefined, 'bold');
-                doc.text('Signature numérique:', 20, y);
-                
-                // Ajouter l'image de la signature
+            if (logoBase64) {
+                doc.setFillColor(255, 255, 255);
+                doc.rect(12, 13, 22, 22, 'F');
                 try {
-                    doc.addImage(factureData.facture.signature, 'PNG', 20, y + 5, 60, 30);
+                    doc.addImage(logoBase64, 'PNG', 12, 13, 22, 22);
                 } catch (e) {
-                    console.error('Erreur ajout signature:', e);
-                    doc.setFont(undefined, 'normal');
-                    doc.text('(Signature disponible)', 20, y + 10);
+                    console.log('Logo skip');
                 }
             }
             
-            // Footer
+            // Nom entreprise
+            doc.setFontSize(16);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(...gold);
+            doc.text(parametres.nom_entreprise || 'NovaFact', 38, 22);
+            
+            // Coordonnées entreprise
             doc.setFontSize(8);
-            doc.setTextColor(128, 128, 128);
-            doc.text('Généré par NovaFact - Document téléchargé via QR Code', 105, 285, { align: 'center' });
+            doc.setFont(undefined, 'normal');
+            doc.setTextColor(80, 80, 80);
+            let yInfo = 28;
+            if (parametres.adresse) { doc.text(parametres.adresse, 38, yInfo); yInfo += 4.5; }
+            if (parametres.code_postal || parametres.ville) {
+                doc.text(`${parametres.code_postal || ''} ${parametres.ville || ''}`.trim(), 38, yInfo);
+                yInfo += 4.5;
+            }
+            if (parametres.telephone) { doc.text(`Tél: ${parametres.telephone}`, 38, yInfo); yInfo += 4.5; }
+            if (parametres.email) { doc.text(`Email: ${parametres.email}`, 38, yInfo); yInfo += 4.5; }
+            if (parametres.siret) { doc.text(`RC: ${parametres.siret}`, 38, yInfo); }
+            
+            // Bloc client
+            doc.setDrawColor(...gray);
+            doc.setLineWidth(0.5);
+            doc.rect(130, 13, 68, 35);
+            
+            doc.setFontSize(9);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(...dark);
+            doc.text('FACTURÉ À :', 134, 21);
+            
+            doc.setFontSize(8.5);
+            doc.setFont(undefined, 'normal');
+            doc.setTextColor(60, 60, 60);
+            let clientY = 28;
+            if (client) {
+                doc.text(client.nom || '', 134, clientY); clientY += 5;
+                if (client.adresse) { doc.text(client.adresse, 134, clientY); clientY += 5; }
+                if (client.tel) { doc.text(`Tél: ${client.tel}`, 134, clientY); clientY += 5; }
+                if (client.email) { doc.text(client.email, 134, clientY); }
+            }
+            
+            // Titre FACTURE
+            doc.setFontSize(22);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(...gold);
+            doc.text('FACTURE', 15, 58);
+            
+            // Infos facture
+            doc.setFillColor(245, 245, 245);
+            doc.rect(15, 62, 180, 18, 'F');
+            
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(...dark);
+            doc.text(`N° ${facture.numero}`, 20, 70);
+            
+            doc.setFont(undefined, 'normal');
+            doc.text(`Date : ${new Date(facture.date_creation).toLocaleDateString('fr-FR')}`, 20, 77);
+            
+            if (facture.date_echeance) {
+                doc.text(`Échéance : ${new Date(facture.date_echeance).toLocaleDateString('fr-FR')}`, 90, 77);
+            }
+            
+            // Statut
+            doc.setTextColor(0, 0, 0);
+            doc.setFont(undefined, 'bold');
+            doc.text(`Statut : ${facture.statut}`, 155, 70);
+            
+            // Tableau articles
+            const tableData = (facture.articles || []).map(item => {
+                const qty = parseFloat(item.quantite) || 0;
+                const pu = parseFloat(item.prix_unitaire) || 0;
+                const rem = parseFloat(item.remise) || 0;
+                const tot = qty * pu * (1 - rem / 100);
+                return [
+                    item.designation || item.description || '-',
+                    qty.toString(),
+                    `${pu.toFixed(2)} ${devise}`,
+                    rem > 0 ? `${rem}%` : '-',
+                    `${(item.tva || 20)}%`,
+                    `${tot.toFixed(2)} ${devise}`
+                ];
+            });
+            
+            doc.autoTable({
+                startY: 84,
+                head: [['Désignation', 'Qté', 'Prix Unit.', 'Remise', 'TVA', 'Total HT']],
+                body: tableData,
+                theme: 'striped',
+                headStyles: {
+                    fillColor: gold,
+                    textColor: [255, 255, 255],
+                    fontSize: 8,
+                    fontStyle: 'bold',
+                    halign: 'center',
+                    cellPadding: 2
+                },
+                bodyStyles: { fontSize: 7.5, textColor: [40, 40, 40], cellPadding: 2 },
+                columnStyles: {
+                    0: { cellWidth: 65, halign: 'left' },
+                    1: { cellWidth: 15, halign: 'center' },
+                    2: { cellWidth: 28, halign: 'right' },
+                    3: { cellWidth: 20, halign: 'center' },
+                    4: { cellWidth: 15, halign: 'center' },
+                    5: { cellWidth: 28, halign: 'right' }
+                },
+                alternateRowStyles: { fillColor: [248, 248, 248] },
+                margin: { left: 15, right: 15 }
+            });
+            
+            // Totaux
+            let y = (doc.previousAutoTable?.finalY || 140) + 6;
+            const totalsHeight = facture.remise_globale > 0 ? 40 : 28;
+            doc.setFillColor(245, 245, 245);
+            doc.rect(110, y, 85, totalsHeight, 'F');
+            
+            doc.setFontSize(8);
+            doc.setFont(undefined, 'normal');
+            doc.setTextColor(60, 60, 60);
+            
+            doc.text('Total HT :', 115, y + 6);
+            doc.text(fmt(facture.total_ht), 192, y + 6, { align: 'right' });
+            
+            if (facture.remise_globale > 0) {
+                doc.setTextColor(239, 68, 68);
+                doc.text(`Remise globale (${facture.remise_globale}%) :`, 115, y + 12);
+                doc.text(`-${fmt(facture.remise_montant)}`, 192, y + 12, { align: 'right' });
+                
+                doc.setTextColor(60, 60, 60);
+                doc.text('Après remise :', 115, y + 18);
+                doc.text(fmt(facture.total_apres_remise), 192, y + 18, { align: 'right' });
+            }
+            
+            const tvay = facture.remise_globale > 0 ? y + 24 : y + 12;
+            doc.text('TVA :', 115, tvay);
+            doc.text(fmt(facture.tva), 192, tvay, { align: 'right' });
+            
+            const ttcy = tvay + 7;
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(10);
+            doc.setTextColor(...gold);
+            doc.text('Total TTC :', 115, ttcy);
+            doc.text(fmt(facture.total_ttc), 192, ttcy, { align: 'right' });
+            
+            // Infos paiement + Signature
+            y = y + totalsHeight + 8;
+            let leftY = y;
+            
+            if (facture.mode_paiement || facture.type_virement || facture.date_depot || facture.date_encaissement) {
+                doc.setFontSize(8);
+                doc.setFont(undefined, 'bold');
+                doc.setTextColor(...dark);
+                doc.text('Informations de paiement', 15, leftY);
+                
+                doc.setFontSize(7);
+                doc.setFont(undefined, 'normal');
+                doc.setTextColor(60, 60, 60);
+                leftY += 4;
+                if (facture.mode_paiement) { doc.text(`Mode : ${facture.mode_paiement}`, 15, leftY); leftY += 4; }
+                if (facture.type_virement) { doc.text(`Type virement : ${facture.type_virement}`, 15, leftY); leftY += 4; }
+                if (facture.date_depot) { doc.text(`Dépôt : ${new Date(facture.date_depot).toLocaleDateString('fr-FR')}`, 15, leftY); leftY += 4; }
+                if (facture.date_encaissement) { doc.text(`Encaissement : ${new Date(facture.date_encaissement).toLocaleDateString('fr-FR')}`, 15, leftY); leftY += 4; }
+                leftY += 3;
+            }
+            
+            // Signature
+            if (facture.signature) {
+                doc.setFontSize(8);
+                doc.setFont(undefined, 'bold');
+                doc.setTextColor(...dark);
+                doc.text('Signature', 15, leftY);
+                
+                try {
+                    doc.addImage(facture.signature, 'PNG', 15, leftY + 2, 50, 16);
+                } catch (e) {
+                    console.log('Signature skip');
+                }
+                
+                doc.setDrawColor(...gray);
+                doc.setLineWidth(0.2);
+                doc.line(15, leftY + 19, 65, leftY + 19);
+                doc.setFontSize(6);
+                doc.setFont(undefined, 'italic');
+                doc.setTextColor(120, 120, 120);
+                doc.text('Signature numérique', 15, leftY + 23);
+            }
+            
+            // Conditions de paiement (sans QR code)
+            doc.setFontSize(7);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(...dark);
+            doc.text('Conditions de paiement', 110, y);
+            
+            doc.setFontSize(6.5);
+            doc.setFont(undefined, 'normal');
+            doc.setTextColor(80, 80, 80);
+            const termsText = "Paiement à réception · Pénalités de retard : 3× le taux légal · Indemnité forfaitaire : 40 MAD";
+            const splitTerms = doc.splitTextToSize(termsText, 85);
+            doc.text(splitTerms, 110, y + 4);
+            
+            // Pied de page
+            doc.setDrawColor(...gold);
+            doc.setLineWidth(0.8);
+            doc.line(15, 270, 195, 270);
+            
+            doc.setFontSize(6.5);
+            doc.setFont(undefined, 'italic');
+            doc.setTextColor(120, 120, 120);
+            doc.text('Merci de votre confiance', 105, 275, { align: 'center' });
+            doc.text('Document téléchargé via QR Code', 105, 280, { align: 'center' });
             
             // Télécharger
-            doc.save(`${factureData.facture.numero}.pdf`);
+            doc.save(`Facture_${facture.numero}.pdf`);
         }
         
         // Charger automatiquement au démarrage
