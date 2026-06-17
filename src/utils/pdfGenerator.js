@@ -63,9 +63,9 @@ const getPDFTranslations = (language = 'fr') => {
 // ─── Génère le QR code pour téléchargement mobile ─────────────────────────────
 const generateQRDataUrl = async (facture, parametres) => {
   // Utiliser REACT_APP_PUBLIC_URL (Railway) pour les QR codes publics
-  // L'app locale utilise localhost, mais les QR codes pointent vers Railway
+  // Le QR code pointe maintenant vers /api/factures/pdf/:id pour téléchargement direct
   const baseUrl = process.env.REACT_APP_PUBLIC_URL || parametres?.url_publique || window.location.origin || 'http://localhost:3000';
-  const downloadUrl = `${baseUrl}/download-invoice/${facture.id}`;
+  const downloadUrl = `${baseUrl}/api/factures/pdf/${facture.id}`;
 
   return QRCode.toDataURL(downloadUrl, {
     width: 100,

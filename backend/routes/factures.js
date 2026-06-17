@@ -4,10 +4,102 @@ import { authenticate, requireAdmin } from '../middleware/auth.js';
 import { addIdField, addIdToArray } from '../utils/transformId.js';
 import Parametres from '../models/Parametres.js';
 import Client from '../models/Client.js';
+import PDFDocument from 'pdfkit';
 
 const router = express.Router();
 
-// Route publique pour téléchargement via QR code (doit être AVANT les routes authentifiées)
+// Route pour téléchargement direct du PDF via QR code (NOUVEAU)
+router.get('/pdf/:id', async (req, res) => {
+  try {
+    const facture = await Facture.findById(req.params.id).populate('client_id');
+    
+    if (!facture) {
+      return res.status(404).send('Facture introuvable');
+    }
+
+    const parametres = await Parametres.findOne();
+    const client = facture.client_id;
+    
+    // Créer le PDF avec PDFKit
+    const doc = new PDFDocument({ margin: 50 });
+    
+    // Headers pour téléchargement
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=Facture_${facture.numero}.pdf`);
+    
+    // Pipe le PDF vers la réponse
+    doc.pipe(res);
+    
+    // === GÉNÉRATION DU PDF ===
+    const devise = facture.devise || parametres?.devise || 'MAD';
+    const fmt = (n) => `${(n || 0).toFixed(2)} ${devise}`;
+    
+    // Titre
+    doc.fontSize(24).fillColor('#D4A853').text('FACTURE', 50, 50);
+    doc.fontSize(12).fillColor('#000').text(`N° ${facture.numero}`, 50, 80);
+    doc.fontSize(10).text(`Date : ${new Date(facture.date_creation).toLocaleDateString('fr-FR')}`, 50, 100);
+    
+    // Info client
+    if (client) {
+      doc.fontSize(10).text('FACTURÉ À :', 350, 80);
+      doc.fontSize(9).text(client.nom || '', 350, 95);
+      if (client.adresse) doc.text(client.adresse, 350, 110);
+      if (client.tel) doc.text(`Tél: ${client.tel}`, 350, 125);
+    }
+    
+    // Ligne de séparation
+    doc.moveTo(50, 150).lineTo(550, 150).stroke();
+    
+    // Tableau des articles
+    let y = 170;
+    doc.fontSize(9).fillColor('#000');
+    doc.text('Désignation', 50, y);
+    doc.text('Qté', 300, y);
+    doc.text('Prix Unit.', 350, y);
+    doc.text('Total HT', 450, y);
+    
+    y += 20;
+    (facture.articles || []).forEach(item => {
+      const qty = parseFloat(item.quantite) || 0;
+      const pu = parseFloat(item.prix_unitaire) || 0;
+      const tot = qty * pu;
+      
+      doc.text(item.designation || '-', 50, y, { width: 240 });
+      doc.text(qty.toString(), 300, y);
+      doc.text(fmt(pu), 350, y);
+      doc.text(fmt(tot), 450, y);
+      y += 20;
+    });
+    
+    // Totaux
+    y += 30;
+    doc.fontSize(10);
+    doc.text('Total HT :', 350, y);
+    doc.text(fmt(facture.total_ht), 450, y);
+    
+    y += 20;
+    doc.text('TVA :', 350, y);
+    doc.text(fmt(facture.tva), 450, y);
+    
+    y += 20;
+    doc.fontSize(12).fillColor('#D4A853');
+    doc.text('Total TTC :', 350, y);
+    doc.text(fmt(facture.total_ttc), 450, y);
+    
+    // Pied de page
+    doc.fontSize(8).fillColor('#666');
+    doc.text('Merci de votre confiance - Document téléchargé via QR Code', 50, 750, { align: 'center' });
+    
+    // Finaliser le PDF
+    doc.end();
+    
+  } catch (error) {
+    console.error('Erreur génération PDF:', error);
+    res.status(500).send('Erreur lors de la génération du PDF');
+  }
+});
+
+// Route publique pour téléchargement via QR code (JSON - ANCIEN)
 router.get('/download/:id', async (req, res) => {
   try {
     const facture = await Facture.findById(req.params.id)
