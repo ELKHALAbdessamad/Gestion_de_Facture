@@ -326,3 +326,5 @@ if (document.readyState === 'loading') {
     console.log('✅ DOM deja charge, lancement immediat loadInvoice()');
     loadInvoice();
 }
+/ /   U p d a t e  
+ 
