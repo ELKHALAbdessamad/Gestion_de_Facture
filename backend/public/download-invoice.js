@@ -1,7 +1,8 @@
-// PDF Generator for QR Code Download - v4.0
-console.log('download-invoice.js v4.0 loaded');
+// PDF Generator for QR Code Download - v5.0 with Logo
+console.log('download-invoice.js v5.0 loaded');
 
 var factureData = null;
+var logoBase64Loaded = null;
 
 var tr = {
     invoice: 'FACTURE',
@@ -36,7 +37,6 @@ var tr = {
     statusRejected: 'Rejetee'
 };
 
-// Meme logique que getActiveEntreprise dans currency.js
 function getActiveEntreprise(parametres) {
     if (!parametres) return {};
     if (parametres.entreprises && parametres.entreprises.length) {
@@ -48,6 +48,30 @@ function getActiveEntreprise(parametres) {
         return parametres.societes[index2] || parametres.entreprise || {};
     }
     return parametres.entreprise || {};
+}
+
+function loadLogo(callback) {
+    var img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function() {
+        try {
+            var canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            logoBase64Loaded = canvas.toDataURL('image/png');
+            console.log('Logo loaded OK, size: ' + img.width + 'x' + img.height);
+        } catch(e) {
+            console.warn('Logo canvas error:', e.message);
+        }
+        callback();
+    };
+    img.onerror = function() {
+        console.warn('Logo not found, continuing without logo');
+        callback();
+    };
+    img.src = '/NovaFact1.png';
 }
 
 function loadInvoice() {
@@ -68,7 +92,10 @@ function loadInvoice() {
             .then(function(data) {
                 console.log('Data loaded OK');
                 factureData = data;
-                downloadPDF();
+                // Charger le logo puis generer le PDF
+                loadLogo(function() {
+                    downloadPDF();
+                });
             })
             .catch(function(error) {
                 console.error('Error:', error);
@@ -93,8 +120,6 @@ function downloadPDF() {
         var client = factureData.client;
         var parametres = factureData.parametres || {};
         var signatureDataUrl = facture.signature;
-
-        // Extraire les infos entreprise - meme logique que getActiveEntreprise
         var entreprise = getActiveEntreprise(parametres);
 
         var gold = [212, 168, 83];
@@ -110,6 +135,18 @@ function downloadPDF() {
         doc.setDrawColor(gold[0], gold[1], gold[2]);
         doc.setLineWidth(3);
         doc.line(10, 10, 200, 10);
+
+        // Logo NovaFact1.png
+        if (logoBase64Loaded) {
+            try {
+                doc.setFillColor(255, 255, 255);
+                doc.rect(12, 13, 22, 22, 'F');
+                doc.addImage(logoBase64Loaded, 'PNG', 12, 13, 22, 22);
+                console.log('Logo added to PDF');
+            } catch(e) {
+                console.warn('Logo not added to PDF:', e.message);
+            }
+        }
 
         // Company name
         doc.setFontSize(16);
@@ -319,7 +356,7 @@ function downloadPDF() {
         doc.text('Document telecharge via QR Code', 105, 280, { align: 'center' });
 
         doc.save('Facture_' + facture.numero + '.pdf');
-        console.log('PDF saved!');
+        console.log('PDF saved with logo!');
         document.querySelector('.loading').innerHTML = 'PDF telecharge ! Vous pouvez fermer cette page.';
 
     } catch(error) {
