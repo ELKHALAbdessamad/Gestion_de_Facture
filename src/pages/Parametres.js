@@ -101,13 +101,26 @@ export const Parametres = () => {
     e.preventDefault();
     try {
       const active = formData.entreprises[formData.entreprise_active] || formData.entreprises[0];
-      await updateParametres({
+      const saved = await updateParametres({
         devise: formData.devise,
         entreprise_active: formData.entreprise_active,
         entreprises: formData.entreprises,
         entreprise: active,
       });
       notify.parametresSauvegardes();
+
+      // 🌐 Synchroniser les paramètres vers Railway/Atlas
+      try {
+        const { syncParametresToRailway } = await import('../services/railwaySync');
+        await syncParametresToRailway(saved || {
+          devise: formData.devise,
+          entreprise_active: formData.entreprise_active,
+          entreprises: formData.entreprises,
+          entreprise: active,
+        });
+      } catch (syncErr) {
+        console.warn('Sync Railway paramètres échoué (non bloquant):', syncErr);
+      }
     } catch {
       notify.error('Erreur lors de la sauvegarde des paramètres');
     }
