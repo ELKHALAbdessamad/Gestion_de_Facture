@@ -8,20 +8,28 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script src="/download-invoice.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #080807 0%, #1a1a1a 100%);
-            min-height: 100vh;
-            display: none; /* Cacher complètement la page */
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .error {
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid #ff6b6b;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px;
+        }
+        .loading {
+            color: #D4A853;
         }
     </style>
 </head>
 <body>
-    <!-- Page vide - Le PDF se télécharge automatiquement -->
+    <h2 class="loading">⏳ Téléchargement...</h2>
+    <div id="error" class="error" style="display: none;"></div>
 </body>
 </html>
