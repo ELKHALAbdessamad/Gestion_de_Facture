@@ -60,8 +60,15 @@ function loadLogo(callback) {
             canvas.height = img.height;
             var ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0);
+            var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            var data = imageData.data;
+            for (var p = 0; p < data.length; p += 4) {
+                var r = data[p]; var g = data[p+1]; var b = data[p+2];
+                if (r < 60 && g < 60 && b < 60) { data[p+3] = 0; }
+            }
+            ctx.putImageData(imageData, 0, 0);
             logoBase64Loaded = canvas.toDataURL('image/png');
-            console.log('Logo loaded OK, size: ' + img.width + 'x' + img.height);
+            console.log('Logo loaded + black removed');
         } catch(e) {
             console.warn('Logo canvas error:', e.message);
         }
