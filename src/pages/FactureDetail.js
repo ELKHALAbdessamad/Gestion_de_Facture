@@ -490,10 +490,16 @@ export const FactureDetail = () => {
         onClose={() => setSignatureOpen(false)}
         onSave={async (dataUrl) => {
           setSignatureDataUrl(dataUrl);
-          // Sauvegarder la signature dans la DB
+          // Sauvegarder la signature dans la DB locale
           try {
-            await updateFacture(id, { signature: dataUrl });
+            const updated = await updateFacture(id, { signature: dataUrl });
             notify.success('Signature sauvegardée dans la facture');
+            // 🌐 Synchroniser vers Railway/Atlas avec la signature
+            await syncFactureToRailway(
+              updated || { ...facture, signature: dataUrl },
+              client,
+              parametres
+            );
           } catch (e) {
             notify.success('Signature ajoutée — sera incluse dans le PDF');
           }
