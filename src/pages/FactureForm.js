@@ -237,7 +237,9 @@ export const FactureForm = () => {
       notify.factureModifiee(factureData.numero);
       
       // 🌐 Synchronisation vers Railway/Atlas via navigateur
-      await syncFactureToRailway(updated || { ...factureData, _id: id });
+      const selectedClient = clients.find(c => c._id === factureData.client_id || c.id === factureData.client_id) || null;
+      const parametresData = await getParametres().catch(() => null);
+      await syncFactureToRailway(updated || { ...factureData, _id: id }, selectedClient, parametresData);
     } else {
       const created = await addFacture(factureData);
       if (status === 'send') {
@@ -247,7 +249,9 @@ export const FactureForm = () => {
       }
       
       // 🌐 Synchronisation vers Railway/Atlas via navigateur
-      await syncFactureToRailway(created);
+      const selectedClient = clients.find(c => c._id === factureData.client_id || c.id === factureData.client_id) || null;
+      const parametresData = await getParametres().catch(() => null);
+      await syncFactureToRailway(created, selectedClient, parametresData);
     }
 
     navigate('/factures');

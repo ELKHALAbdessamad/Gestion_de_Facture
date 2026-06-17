@@ -91,7 +91,7 @@ export const FactureDetail = () => {
     notify.factureValidee(facture.numero);
     
     // 🌐 Synchronisation vers Railway/Atlas
-    await syncFactureToRailway(updated || { ...facture, statut: 'Payée' });
+    await syncFactureToRailway(updated || { ...facture, statut: 'Payée' }, client, parametres);
     
     loadData();
 
@@ -132,7 +132,7 @@ export const FactureDetail = () => {
     if (newStatut === 'Rejetée') notify.factureRejetee(facture.numero);
     
     // 🌐 Synchronisation vers Railway/Atlas
-    await syncFactureToRailway(updated || { ...facture, statut: newStatut });
+    await syncFactureToRailway(updated || { ...facture, statut: newStatut }, client, parametres);
     
     loadData();
   };

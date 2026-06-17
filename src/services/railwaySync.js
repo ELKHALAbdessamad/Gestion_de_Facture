@@ -6,11 +6,13 @@
 const RAILWAY_URL = process.env.REACT_APP_PUBLIC_URL || 'https://gestiondefacture-production.up.railway.app';
 
 /**
- * Synchronise une facture vers Railway/Atlas
+ * Synchronise une facture vers Railway/Atlas (avec client et parametres)
  * @param {Object} facture - La facture à synchroniser
+ * @param {Object} client - Le client associé (optionnel)
+ * @param {Object} parametres - Les paramètres entreprise (optionnel)
  * @returns {Promise<boolean>} - true si succès, false si échec
  */
-export const syncFactureToRailway = async (facture) => {
+export const syncFactureToRailway = async (facture, client = null, parametres = null) => {
   try {
     console.log('🔄 Synchronisation facture vers Railway/Atlas:', facture.numero);
     
@@ -19,7 +21,7 @@ export const syncFactureToRailway = async (facture) => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ facture })
+      body: JSON.stringify({ facture, client, parametres })
     });
 
     if (response.ok) {

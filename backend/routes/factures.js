@@ -42,10 +42,34 @@ router.get('/download/:id', async (req, res) => {
 // Permet au backend local d'envoyer les factures vers Railway/Atlas
 router.post('/sync', async (req, res) => {
   try {
-    const { facture, client } = req.body;
+    const { facture, client, parametres } = req.body;
     
     if (!facture || !facture._id) {
       return res.status(400).json({ error: 'Données de facture invalides' });
+    }
+
+    // Synchroniser le client si fourni
+    if (client && client._id) {
+      const existingClient = await Client.findById(client._id);
+      if (existingClient) {
+        const { _id, __v, createdAt, updatedAt, ...clientUpdate } = client;
+        await Client.findByIdAndUpdate(client._id, clientUpdate);
+      } else {
+        await Client.create({ ...client, _id: client._id });
+      }
+      console.log(`✅ Client ${client.nom} synchronisé`);
+    }
+
+    // Synchroniser les paramètres si fournis
+    if (parametres) {
+      const existingParams = await Parametres.findOne();
+      if (existingParams) {
+        const { _id, __v, createdAt, updatedAt, ...paramsUpdate } = parametres;
+        await Parametres.findByIdAndUpdate(existingParams._id, paramsUpdate);
+      } else {
+        await Parametres.create(parametres);
+      }
+      console.log(`✅ Parametres synchronises`);
     }
 
     // Vérifier si la facture existe déjà (par _id)
@@ -59,7 +83,7 @@ router.post('/sync', async (req, res) => {
     } else {
       // Créer une nouvelle facture avec l'ID exact
       const newFacture = new Facture(facture);
-      newFacture._id = facture._id; // Forcer le même ID
+      newFacture._id = facture._id;
       newFacture.isNew = true;
       await newFacture.save();
       console.log(`✅ Facture ${facture.numero} synchronisée (création)`);
