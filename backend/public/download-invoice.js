@@ -1,7 +1,6 @@
-// PDF Generator for QR Code Download - v3.0 CLEAN
-console.log('download-invoice.js loaded OK');
+// PDF Generator for QR Code Download - v4.0
+console.log('download-invoice.js v4.0 loaded');
 
-var logoBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAACXBIWXMAAAsTAAALEwEAmpwYAAABNmlDQ1BpY2MAABiVY2BgMnB0cXJlEmBgyM0rKQpyd1KIiIxSYD/PwMbAzAAGicnFBY4BAT4gdl5+XioDBvh+qXgYMoUQW4CMPgYg+zUD/////8K1AwODvP///3////8PUPkZmMwBcgVBegC8r7AwMEhRREhXQjbyCFSDKHPnmLBgYGRgYOBKKUlNYWBgYE9HyGZnVxYW5mbmZlEQMzAzAAAAALMLB0NDQ0MAAACRSUQBSTY1NwAAAABbAAAAAAAAFSwBAAAAAAAAAQAAAAB';
 var factureData = null;
 
 var tr = {
@@ -36,6 +35,20 @@ var tr = {
     statusPending: 'En attente',
     statusRejected: 'Rejetee'
 };
+
+// Meme logique que getActiveEntreprise dans currency.js
+function getActiveEntreprise(parametres) {
+    if (!parametres) return {};
+    if (parametres.entreprises && parametres.entreprises.length) {
+        var index = parametres.entreprise_active || 0;
+        return parametres.entreprises[index] || parametres.entreprise || {};
+    }
+    if (parametres.societes && parametres.societes.length) {
+        var index2 = parametres.societe_active || 0;
+        return parametres.societes[index2] || parametres.entreprise || {};
+    }
+    return parametres.entreprise || {};
+}
 
 function loadInvoice() {
     try {
@@ -74,13 +87,15 @@ function downloadPDF() {
     try {
         var jsPDF = window.jspdf && window.jspdf.jsPDF;
         if (!jsPDF) { throw new Error('jsPDF not loaded'); }
-        console.log('jsPDF OK, generating PDF...');
 
         var doc = new jsPDF();
         var facture = factureData.facture;
         var client = factureData.client;
         var parametres = factureData.parametres || {};
         var signatureDataUrl = facture.signature;
+
+        // Extraire les infos entreprise - meme logique que getActiveEntreprise
+        var entreprise = getActiveEntreprise(parametres);
 
         var gold = [212, 168, 83];
         var dark = [8, 8, 7];
@@ -96,32 +111,32 @@ function downloadPDF() {
         doc.setLineWidth(3);
         doc.line(10, 10, 200, 10);
 
-        // Logo
-        try {
-            doc.setFillColor(255, 255, 255);
-            doc.rect(12, 13, 22, 22, 'F');
-            doc.addImage(logoBase64, 'PNG', 12, 13, 22, 22);
-        } catch(e) {
-            console.warn('Logo not added:', e.message);
-        }
-
         // Company name
         doc.setFontSize(16);
         doc.setFont(undefined, 'bold');
         doc.setTextColor(gold[0], gold[1], gold[2]);
-        doc.text((parametres.nom_entreprise || 'NovaFact'), 38, 22);
+        var nomEntreprise = entreprise.nom || parametres.nom_entreprise || 'NovaFact';
+        doc.text(nomEntreprise, 38, 22);
 
-        // Company info
+        // Company info lines
         doc.setFontSize(8);
         doc.setFont(undefined, 'normal');
         doc.setTextColor(80, 80, 80);
         var infoLines = [];
-        if (parametres.adresse) infoLines.push(parametres.adresse);
-        var ville = ((parametres.code_postal || '') + ' ' + (parametres.ville || '')).trim();
-        if (ville) infoLines.push(ville);
-        if (parametres.telephone) infoLines.push('Tel: ' + parametres.telephone);
-        if (parametres.email) infoLines.push('Email: ' + parametres.email);
-        if (parametres.siret) infoLines.push('RC: ' + parametres.siret);
+        var adresse = entreprise.adresse || parametres.adresse;
+        var ville = entreprise.ville || parametres.ville;
+        var codePostal = entreprise.code_postal || parametres.code_postal;
+        var tel = entreprise.tel || parametres.telephone;
+        var email = entreprise.email || parametres.email;
+        var siret = entreprise.siret || entreprise.rc || parametres.siret;
+
+        if (adresse) infoLines.push(adresse);
+        var villeStr = ((codePostal || '') + ' ' + (ville || '')).trim();
+        if (villeStr) infoLines.push(villeStr);
+        if (tel) infoLines.push('Tel: ' + tel);
+        if (email) infoLines.push('Email: ' + email);
+        if (siret) infoLines.push('RC: ' + siret);
+
         for (var i = 0; i < infoLines.length; i++) {
             doc.text(infoLines[i], 38, 28 + i * 4.5);
         }
@@ -305,7 +320,6 @@ function downloadPDF() {
 
         doc.save('Facture_' + facture.numero + '.pdf');
         console.log('PDF saved!');
-
         document.querySelector('.loading').innerHTML = 'PDF telecharge ! Vous pouvez fermer cette page.';
 
     } catch(error) {
