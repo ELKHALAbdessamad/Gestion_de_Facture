@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Téléchargement Facture - NovaFact</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-    <script src="/download-invoice.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -31,5 +28,10 @@
 <body>
     <h2 class="loading">⏳ Téléchargement...</h2>
     <div id="error" class="error" style="display: none;"></div>
+    
+    <!-- Charger les bibliothèques dans le bon ordre -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="/download-invoice.js"></script>
 </body>
 </html>
