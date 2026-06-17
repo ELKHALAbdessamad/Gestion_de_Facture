@@ -106,9 +106,7 @@ function loadInvoice() {
             })
             .catch(function(error) {
                 console.error('Error:', error);
-                document.querySelector('.loading').style.display = 'none';
-                document.getElementById('error').style.display = 'block';
-                document.getElementById('error').innerHTML = '<h3>Erreur</h3><p>' + error.message + '</p>';
+                if(window.showDownloadError) window.showDownloadError(error.message);
             });
     } catch(e) {
         console.error('Fatal error:', e);
@@ -364,13 +362,11 @@ function downloadPDF() {
 
         doc.save('Facture_' + facture.numero + '.pdf');
         console.log('PDF saved with logo!');
-        document.querySelector('.loading').innerHTML = 'PDF telecharge ! Vous pouvez fermer cette page.';
+        if(window.showDownloadSuccess) window.showDownloadSuccess();
 
     } catch(error) {
         console.error('PDF error:', error);
-        document.querySelector('.loading').style.display = 'none';
-        document.getElementById('error').style.display = 'block';
-        document.getElementById('error').innerHTML = '<h3>Erreur PDF</h3><p>' + error.message + '</p>';
+        if(window.showDownloadError) window.showDownloadError(error.message);
     }
 }
 
